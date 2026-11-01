@@ -80,7 +80,7 @@ Rotas protegidas exigem o header `Authorization: Bearer <token>`.
 
 ## Testes
 
-Na pasta `backend/`, execute `npm test` para rodar a suíte automatizada. Ela inclui a regra de diária completa para períodos parciais de 24 horas, limites de períodos exatos e preservação de centavos no valor total.
+Na pasta `backend/`, execute `npm test` para rodar a suíte automatizada. Ela cobre a regra de diária completa para períodos parciais de 24 horas, limites de períodos exatos, preservação de centavos e bloqueio HTTP de consulta/finalização de locação alheia. O teste de autorização atravessa a rota real, mas substitui o delegate Prisma; portanto não substitui um teste de integração com MySQL.
 
 ### Exemplos
 ```
