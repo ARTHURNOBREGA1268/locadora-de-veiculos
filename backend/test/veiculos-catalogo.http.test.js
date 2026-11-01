@@ -242,7 +242,7 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
           id: 31,
           dataInicio: new Date("2026-11-02T12:00:00.000Z"),
           dataPrevistaDevolucao: new Date("2026-11-04T12:00:00.000Z"),
-          status: "ATIVA",
+          status: "reservada",
         },
       ];
     },
@@ -324,7 +324,7 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   assert.equal(locacoesAdmin.resposta.status, 200);
   assert.equal(locacoesAdmin.dados.length, 1);
   assert.equal(locacoesAdmin.dados[0].id, 31);
-  assert.equal(locacoesAdmin.dados[0].status, "ATIVA");
+  assert.equal(locacoesAdmin.dados[0].status, "reservada");
   assert.equal(consultasLocacoes, 1);
 
   const historicoAdmin = await requisitar(

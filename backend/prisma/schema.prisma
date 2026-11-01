@@ -6,8 +6,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 enum StatusLocacao {
-  ATIVA
-  FINALIZADA
+  reservada
+  retirada
+  em_andamento
+  devolvida
+  finalizada
+  cancelada
 }
 enum PapelUsuario {
   USER
@@ -68,6 +72,8 @@ model CategoriaVeiculo {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
   veiculos Veiculo[]
+  franquias FranquiaCategoria[]
+  caucoes CaucaoCategoria[]
   @@map("categorias_veiculo")
 }
 model Filial {
@@ -76,6 +82,7 @@ model Filial {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(0)
   veiculos Veiculo[]
+  configuracoes ConfigFilial[]
   @@map("filiais")
 }
 model OpcionalVeiculo {
@@ -156,7 +163,7 @@ model Locacao {
   dataPrevistaDevolucao DateTime
   dataDevolucaoEfetiva DateTime?
   valorTotal Decimal @db.Decimal(10,2)
-  status StatusLocacao @default(ATIVA)
+  status StatusLocacao @default(reservada)
   usuario Usuario @relation(fields: [usuarioId], references: [id])
   veiculo Veiculo @relation(fields: [veiculoId], references: [id])
   multas Multa[]
@@ -223,4 +230,118 @@ model Vistoria {
   @@index([veiculoId])
   @@index([locacaoId])
   @@map("vistorias")
+}
+
+enum PoliticaCombustivel {
+  mesmo_nivel
+  cobrar_reposicao
+  tanque_cheio_pre_pago
+}
+enum TipoConfigFilial {
+  retirada
+  devolucao
+}
+model ConfiguracaoLocacao {
+  id Int @id @default(1)
+  periodoMinimoDiarias Int @default(1) @map("periodo_minimo_diarias") @db.UnsignedTinyInt
+  periodoMaximoDiarias Int @default(30) @map("periodo_maximo_diarias") @db.UnsignedSmallInt
+  horarioRetiradaPadrao DateTime @default("1970-01-01T09:00:00.000Z") @map("horario_retirada_padrao") @db.Time(0)
+  horarioDevolucaoPadrao DateTime @default("1970-01-01T09:00:00.000Z") @map("horario_devolucao_padrao") @db.Time(0)
+  toleranciaAtrasoMinutos Int @default(30) @map("tolerancia_atraso_minutos") @db.UnsignedSmallInt
+  antecedenciaMinimaHoras Int @default(0) @map("antecedencia_minima_horas") @db.UnsignedSmallInt
+  antecedenciaMaximaDias Int @default(365) @map("antecedencia_maxima_dias") @db.UnsignedSmallInt
+  cancelamentoPrazoHoras Int @default(24) @map("cancelamento_prazo_horas") @db.UnsignedSmallInt
+  cancelamentoMultaPercentual Decimal @default(0) @map("cancelamento_multa_percentual") @db.Decimal(5,2)
+  idadeMinima Int @default(21) @map("idade_minima") @db.UnsignedTinyInt
+  tempoMinimoCnhMeses Int @default(12) @map("tempo_minimo_cnh_meses") @db.UnsignedSmallInt
+  documentosExigidos Json @map("documentos_exigidos")
+  exigeCartaoCredito Boolean @default(true) @map("exige_cartao_credito")
+  permiteMotoristaAdicional Boolean @default(false) @map("permite_motorista_adicional")
+  maxMotoristasAdicionais Int @default(0) @map("max_motoristas_adicionais") @db.UnsignedTinyInt
+  kmLivre Boolean @default(true) @map("km_livre")
+  kmFranquiaDiaria Int? @map("km_franquia_diaria") @db.UnsignedInt
+  politicaCombustivel PoliticaCombustivel @default(mesmo_nivel) @map("politica_combustivel")
+  permiteDevolucaoOutraFilial Boolean @default(false) @map("permite_devolucao_outra_filial")
+  permiteEntregaDomicilio Boolean @default(false) @map("permite_entrega_domicilio")
+  permiteRetiradaAeroporto Boolean @default(false) @map("permite_retirada_aeroporto")
+  raioEntregaKm Int? @map("raio_entrega_km") @db.UnsignedSmallInt
+  protecaoBasicaInclusa Boolean @default(true) @map("protecao_basica_inclusa")
+  exigeVistoriaSaida Boolean @default(true) @map("exige_vistoria_saida")
+  exigeVistoriaEntrada Boolean @default(true) @map("exige_vistoria_entrada")
+  modeloContrato String? @map("modelo_contrato") @db.LongText
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+  filiais ConfigFilial[]
+  protecoes ProtecaoConfig[]
+  checklist ChecklistItem[]
+  franquias FranquiaCategoria[]
+  caucoes CaucaoCategoria[]
+  @@map("configuracoes_locacao")
+}
+model Protecao {
+ id Int @id @default(autoincrement())
+ nome String @db.VarChar(80)
+ descricao String? @db.Text
+ ativo Boolean @default(true)
+ createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+ updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+ configuracoes ProtecaoConfig[]
+ @@map("protecoes")
+}
+model ProtecaoConfig {
+ configId Int @map("config_id")
+ protecaoId Int @map("protecao_id")
+ selecionada Boolean @default(false)
+ createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+ updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+ config ConfiguracaoLocacao @relation(fields:[configId], references:[id], onDelete:Cascade)
+ protecao Protecao @relation(fields:[protecaoId], references:[id], onDelete:Restrict)
+ @@id([configId, protecaoId])
+ @@map("config_protecoes")
+}
+model ConfigFilial {
+ configId Int @map("config_id")
+ filialId Int @map("filial_id")
+ tipo TipoConfigFilial
+ createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+ updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+ config ConfiguracaoLocacao @relation(fields:[configId], references:[id], onDelete:Cascade)
+ filial Filial @relation(fields:[filialId], references:[id], onDelete:Restrict)
+ @@id([configId, filialId, tipo])
+ @@map("config_filiais")
+}
+model ChecklistItem {
+ id Int @id @default(autoincrement())
+ configId Int @map("config_id")
+ descricao String @db.VarChar(120)
+ obrigatorio Boolean @default(true)
+ ordem Int @default(0) @db.UnsignedTinyInt
+ ativo Boolean @default(true)
+ createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+ updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+ config ConfiguracaoLocacao @relation(fields:[configId], references:[id], onDelete:Cascade)
+ @@index([configId, ordem])
+ @@map("checklist_itens")
+}
+model FranquiaCategoria {
+ configId Int @map("config_id")
+ categoriaId Int @map("categoria_id")
+  valor Decimal @db.Decimal(10,2)
+  config ConfiguracaoLocacao @relation(fields:[configId], references:[id], onDelete:Cascade)
+  categoria CategoriaVeiculo @relation(fields:[categoriaId], references:[id], onDelete:Restrict)
+  @@id([configId,categoriaId])
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+  @@map("franquias_categoria")
+}
+model CaucaoCategoria {
+ configId Int @map("config_id")
+ categoriaId Int @map("categoria_id")
+  valor Decimal @db.Decimal(10,2)
+  config ConfiguracaoLocacao @relation(fields:[configId], references:[id], onDelete:Cascade)
+  categoria CategoriaVeiculo @relation(fields:[categoriaId], references:[id], onDelete:Restrict)
+  @@id([configId,categoriaId])
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at") @db.DateTime(0)
+  @@map("caucoes_categoria")
 }

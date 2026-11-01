@@ -1,13 +1,10 @@
-const { Router } = require('express');
-const controller = require('../controllers/locacao.controller');
-const autenticar = require('../middlewares/auth.middleware');
-
+const { Router } = require("express");
+const controller = require("../controllers/locacao.controller");
+const autenticar = require("../middlewares/auth.middleware");
 const router = Router();
-
 router.use(autenticar);
-router.post('/', controller.criar);
-router.get('/', controller.listar);
-router.get('/:id', controller.buscar);
-router.patch('/:id/finalizar', controller.finalizar);
-
+router.post("/", controller.criar);
+router.get("/", controller.listar);
+router.get("/:id", controller.buscar);
+router.patch("/:id/:acao", controller.transicao);
 module.exports = router;

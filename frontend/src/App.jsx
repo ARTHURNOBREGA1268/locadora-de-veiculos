@@ -1,11 +1,12 @@
-import { Navigate, Route, Routes } from 'react-router';
-import ProtectedRoute from './components/ProtectedRoute';
-import Layout from './components/Layout';
-import Login from './pages/Login';
-import Cadastro from './pages/Cadastro';
-import Veiculos from './pages/Veiculos';
-import Locacoes from './pages/Locacoes';
-import Usuarios from './pages/Usuarios';
+import { Navigate, Route, Routes } from "react-router";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Layout from "./components/Layout";
+import Login from "./pages/Login";
+import Cadastro from "./pages/Cadastro";
+import Veiculos from "./pages/Veiculos";
+import Locacoes from "./pages/Locacoes";
+import Usuarios from "./pages/Usuarios";
+import ConfiguracoesLocacao from "./pages/ConfiguracoesLocacao";
 
 export default function App() {
   return (
@@ -21,6 +22,10 @@ export default function App() {
       <Route element={<ProtectedRoute adminOnly />}>
         <Route element={<Layout />}>
           <Route path="/usuarios" element={<Usuarios />} />
+          <Route
+            path="/configuracoes/locacao"
+            element={<ConfiguracoesLocacao />}
+          />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/locacoes" replace />} />

@@ -318,7 +318,10 @@ async function editar(id, body) {
     });
     if (!veiculo) throw new AppError("Veículo não encontrado", 404);
     const locacaoAtiva = await prisma.locacao.findFirst({
-      where: { veiculoId, status: "ATIVA" },
+      where: {
+        veiculoId,
+        status: { in: ["reservada", "retirada", "em_andamento"] },
+      },
       select: { id: true },
     });
     if (locacaoAtiva)

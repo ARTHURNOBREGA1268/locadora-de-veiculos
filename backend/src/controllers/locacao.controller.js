@@ -1,29 +1,29 @@
-const locacaoService = require('../services/locacao.service');
-
+const service = require("../services/locacao.service");
 async function criar(req, res) {
   const { veiculoId, dataInicio, dataPrevistaDevolucao } = req.body || {};
-  const locacao = await locacaoService.criar({
-    usuarioId: req.userId,
-    veiculoId,
-    dataInicio,
-    dataPrevistaDevolucao
-  });
-  res.status(201).json(locacao);
+  res
+    .status(201)
+    .json(
+      await service.criar({
+        usuarioId: req.userId,
+        veiculoId,
+        dataInicio,
+        dataPrevistaDevolucao,
+      }),
+    );
 }
-
 async function listar(req, res) {
-  const locacoes = await locacaoService.listarDoUsuario(req.userId);
-  res.status(200).json(locacoes);
+  res.json(await service.listarDoUsuario(req.userId));
 }
-
 async function buscar(req, res) {
-  const locacao = await locacaoService.buscarDoUsuario(req.userId, req.params.id);
-  res.status(200).json(locacao);
+  res.json(await service.buscarDoUsuario(req.userId, req.params.id));
 }
-
+async function transicao(req, res) {
+  res.json(
+    await service.transicionar(req.userId, req.params.id, req.params.acao),
+  );
+}
 async function finalizar(req, res) {
-  const locacao = await locacaoService.finalizar(req.userId, req.params.id);
-  res.status(200).json(locacao);
+  res.json(await service.finalizar(req.userId, req.params.id));
 }
-
-module.exports = { criar, listar, buscar, finalizar };
+module.exports = { criar, listar, buscar, transicao, finalizar };

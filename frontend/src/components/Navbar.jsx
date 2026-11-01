@@ -1,5 +1,5 @@
-import { NavLink, useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
+import { NavLink, useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
   const { usuario, logout } = useAuth();
@@ -7,7 +7,7 @@ export default function Navbar() {
 
   function sair() {
     logout();
-    navigate('/login');
+    navigate("/login");
   }
 
   return (
@@ -17,7 +17,12 @@ export default function Navbar() {
         <nav className="menu" aria-label="Principal">
           <NavLink to="/locacoes">Locações</NavLink>
           <NavLink to="/veiculos">Veículos</NavLink>
-          {usuario.papel === 'ADMIN' && <NavLink to="/usuarios">Usuários</NavLink>}
+          {usuario.papel === "ADMIN" && (
+            <NavLink to="/usuarios">Usuários</NavLink>
+          )}
+          {usuario.papel === "ADMIN" && (
+            <NavLink to="/configuracoes/locacao">Configurações</NavLink>
+          )}
         </nav>
         <div className="usuario">
           <span className="usuario-nome">{usuario.nome}</span>

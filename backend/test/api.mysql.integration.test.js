@@ -88,6 +88,7 @@ test(
     const semAutenticacao = await requisitar("/veiculos");
     assert.equal(semAutenticacao.status, 401);
 
+    assert.equal((await requisitar('/configuracoes/locacao', { token: token1 })).status, 200);
     const usuariosAdmin = await requisitar("/usuarios", { token: token1 });
     assert.equal(usuariosAdmin.status, 200);
     assert.equal(
@@ -277,6 +278,71 @@ test(
       "migration deve semear categorias, filial e opcionais",
     );
 
+    const configuracaoInicial = await requisitar("/configuracoes/locacao", {
+      token: token1,
+    });
+    assert.equal(configuracaoInicial.status, 200);
+    const configuracaoPayload = { ...configuracaoInicial.dados };
+    delete configuracaoPayload.catalogos;
+    delete configuracaoPayload.id;
+    delete configuracaoPayload.createdAt;
+    delete configuracaoPayload.updatedAt;
+    const nomeProtecaoTeste = `Proteção CI ${sufixo}`;
+    const descricaoChecklistTeste = `Checklist CI ${sufixo}`;
+    configuracaoPayload.filiaisRetirada = [filial.id];
+    configuracaoPayload.filiaisDevolucao = [filial.id];
+    configuracaoPayload.protecoes = [
+      ...configuracaoPayload.protecoes,
+      {
+        nome: nomeProtecaoTeste,
+        descricao: "Proteção criada pelo teste de integração",
+        ativo: true,
+        selecionada: true,
+      },
+    ];
+    configuracaoPayload.franquiasCategoria = [
+      { categoriaId: categoria.id, valor: 1234.56 },
+    ];
+    configuracaoPayload.caucoesCategoria = [
+      { categoriaId: categoria.id, valor: 2345.67 },
+    ];
+    configuracaoPayload.checklistItens = [
+      ...configuracaoPayload.checklistItens,
+      {
+        descricao: descricaoChecklistTeste,
+        obrigatorio: true,
+        ativo: true,
+        ordem: configuracaoPayload.checklistItens.length,
+      },
+    ];
+    const configuracaoSalva = await requisitar("/configuracoes/locacao", {
+      metodo: "PUT",
+      token: token1,
+      corpo: configuracaoPayload,
+    });
+    assert.equal(configuracaoSalva.status, 200);
+    assert.ok(
+      configuracaoSalva.dados.protecoes.some(
+        (protecao) =>
+          protecao.nome === nomeProtecaoTeste && protecao.selecionada,
+      ),
+      "proteção nova e seleção devem persistir",
+    );
+    assert.ok(
+      configuracaoSalva.dados.checklistItens.some(
+        (item) => item.descricao === descricaoChecklistTeste,
+      ),
+      "item de checklist novo deve persistir",
+    );
+    assert.equal(
+      Number(configuracaoSalva.dados.franquiasCategoria[0].valor),
+      1234.56,
+    );
+    assert.equal(
+      Number(configuracaoSalva.dados.caucoesCategoria[0].valor),
+      2345.67,
+    );
+
     const placa = `CI${String(Date.now()).slice(-5)}A`;
     const renavam = String(Date.now()).slice(-11);
     const chassi = `9BWZZZ37${String(Date.now()).slice(-9)}`;
@@ -461,7 +527,7 @@ test(
       corpo: dadosLocacao,
     });
     assert.equal(cadastroLocacao.status, 201);
-    assert.equal(cadastroLocacao.dados.status, "ATIVA");
+    assert.equal(cadastroLocacao.dados.status, "reservada");
     assert.equal(Number(cadastroLocacao.dados.valorTotal), 241.1);
     const locacoesDoVeiculo = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}/locacoes`,
@@ -470,7 +536,7 @@ test(
     assert.equal(locacoesDoVeiculo.status, 200);
     assert.equal(locacoesDoVeiculo.dados.length, 1);
     assert.equal(locacoesDoVeiculo.dados[0].id, cadastroLocacao.dados.id);
-    assert.equal(locacoesDoVeiculo.dados[0].status, "ATIVA");
+    assert.equal(locacoesDoVeiculo.dados[0].status, "reservada");
     assert.equal(Object.hasOwn(locacoesDoVeiculo.dados[0], "usuarioId"), false);
 
     const multaVinculada = await requisitar(
@@ -576,6 +642,10 @@ test(
     assert.equal(historicoAntes.status, 200);
     assert.equal(historicoAntes.dados.length, 1);
 
+    for (const etapa of ['retirar','iniciar','devolver']) {
+      const resultadoEtapa = await requisitar(`/locacoes/${cadastroLocacao.dados.id}/${etapa}`, { metodo: 'PATCH', token: token1 });
+      assert.equal(resultadoEtapa.status, 200);
+    }
     const finalizacao = await requisitar(
       `/locacoes/${cadastroLocacao.dados.id}/finalizar`,
       {
@@ -584,7 +654,7 @@ test(
       },
     );
     assert.equal(finalizacao.status, 200);
-    assert.equal(finalizacao.dados.status, "FINALIZADA");
+    assert.equal(finalizacao.dados.status, "finalizada");
     assert.ok(finalizacao.dados.dataDevolucaoEfetiva);
     assert.equal(finalizacao.dados.veiculo.status, "disponivel");
     const locacoesDepoisDeFinalizar = await requisitar(
@@ -592,7 +662,7 @@ test(
       { token: token1 },
     );
     assert.equal(locacoesDepoisDeFinalizar.dados.length, 1);
-    assert.equal(locacoesDepoisDeFinalizar.dados[0].status, "FINALIZADA");
+    assert.equal(locacoesDepoisDeFinalizar.dados[0].status, "finalizada");
 
     const finalizacaoRepetida = await requisitar(
       `/locacoes/${cadastroLocacao.dados.id}/finalizar`,
@@ -606,7 +676,7 @@ test(
     const historicoDepois = await requisitar("/locacoes", { token: token1 });
     assert.equal(historicoDepois.status, 200);
     assert.equal(historicoDepois.dados.length, 1);
-    assert.equal(historicoDepois.dados[0].status, "FINALIZADA");
+    assert.equal(historicoDepois.dados[0].status, "finalizada");
 
     const veiculosDisponiveisDepois = await requisitar(
       "/veiculos?disponivel=true",

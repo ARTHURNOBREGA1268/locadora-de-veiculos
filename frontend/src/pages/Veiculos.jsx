@@ -22,8 +22,11 @@ const statusNome = {
   inativo: "Inativo",
 };
 const enumNomes = {
-  ATIVA: "Ativa",
-  FINALIZADA: "Finalizada",
+  reservada: "Reservada",
+  retirada: "Retirada",
+  devolvida: "Devolvida",
+  finalizada: "Finalizada",
+  cancelada: "Cancelada",
   manual: "Manual",
   automatico: "Automático",
   gasolina: "Gasolina",

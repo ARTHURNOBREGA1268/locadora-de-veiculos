@@ -14,7 +14,7 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 - Histórico administrativo por veículo: manutenções, sinistros/avarias, multas e vistorias; vínculos de locação são validados
 - Registro de locação com cálculo do valor no backend (qualquer fração de 24 horas conta como diária completa)
 - Listagem das locações do usuário autenticado, com os dados do veículo
-- Finalização de locação, que registra a devolução e libera o veículo
+- Fluxo explícito e transacional: reservada → retirada → em_andamento → devolvida → finalizada, ou reservada → cancelada; liberação do veículo na devolução/cancelamento
 - Acesso restrito ao dono da locação
 
 ## Integrantes
@@ -96,12 +96,19 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | POST | /veiculos/:id/sinistros | sim, ADMIN | Registra sinistro/avaria |
 | POST | /veiculos/:id/multas | sim, ADMIN | Registra multa e, opcionalmente, vincula locação do mesmo veículo |
 | POST | /veiculos/:id/vistorias | sim, ADMIN | Registra vistoria de saída/entrada |
-| POST | /locacoes | sim | Registra locação |
+| POST | /locacoes | sim | Registra locação reservada |
 | GET | /locacoes | sim | Lista as locações do usuário |
 | GET | /locacoes/:id | sim | Consulta uma locação do usuário |
-| PATCH | /locacoes/:id/finalizar | sim | Finaliza a locação |
+| PATCH | /locacoes/:id/retirar, /iniciar, /devolver, /finalizar, /cancelar | sim, proprietário | Executa a próxima transição permitida |
+| GET/PUT | /configuracoes/locacao | sim, ADMIN | Consulta/atualiza configuração global, catálogos e regras |
 
 Rotas protegidas exigem o header `Authorization: Bearer <token>`. A cada requisição protegida, status, papel e versão de sessão são consultados no banco. Contas inativas são bloqueadas imediatamente; redefinir senha ou inativar incrementa a versão e revoga tokens existentes, inclusive se a conta for reativada depois. O papel de autorização vem do banco, nunca do cliente/JWT. Não há exclusão física: inativar preserva histórico. Administradores não podem inativar/rebaixar a si mesmos nem remover o último ADMIN ativo; conflitos retornam 409. Cadastro público cria sempre USER ativo e ignora papel/status enviados pelo cliente.
+
+## Configuração global de locação e estados
+
+`GET /configuracoes/locacao` e `PUT /configuracoes/locacao` são ADMIN-only. O PUT exige o objeto completo retornado pelo GET, incluindo arrays relacionais; campos desconhecidos, limites fora dos tipos SQL, enums, booleanos e IDs de catálogos são validados antes da transação. O catálogo de proteções permite criar/editar opções e ativá-las/desativá-las; os vínculos e seleções são persistidos. Itens de checklist novos são criados sem ID local, os existentes são atualizados e os removidos na tela são excluídos do cadastro. Franquias/cauções são mantidas por categoria, inclusive categorias adicionadas posteriormente.
+
+A migration converte `ATIVA` para `reservada` quando `dataInicio` é futura e `em_andamento` nos demais casos; `FINALIZADA` vira `finalizada`, preservando datas existentes. Reservas novas começam `reservada` e mantêm o veículo como `reservado`; a ação de retirada move a locação a `retirada` e o veículo a `alugado`, seguindo para `em_andamento`, devolvida e finalizada. O status não é editável livremente. Cancelamento só é aceito antes da retirada e retorna `multaCancelamentoCalculada` como estimativa mostrada na interface; não há cobrança nem processamento de pagamento. A antecedência e o intervalo mínimo/máximo são aplicados ao criar locações. Idade, tempo de CNH, cartão e documentos são armazenados como política, mas ainda não são verificados, pois Usuario não tem dados comprováveis. As opções de filial, quilometragem, combustível, motorista, proteções, caução, franquia e checklist são persistidas, mas ainda não alteram o contrato ou a cobrança; não há fluxo de pagamento/assinatura/vistoria executável. Horários padrão são configuráveis, mas o horário efetivo solicitado continua vindo no payload da locação.
 
 ## Testes
 
@@ -143,7 +150,7 @@ src/integrations/ adaptadores de integrações externas usados somente pelo back
 - **Identificação do usuário:** o `usuarioId` das locações vem sempre do token (`req.userId`), nunca do corpo da requisição.
 - **Senhas:** guardadas com `bcrypt` (10 rounds). O hash nunca é retornado pela API, porque os `select` do service de autenticação omitem o campo.
 - **Cálculo do valor:** feito no service de locações. Número de diárias é `ceil(duração / 24h)`, multiplicado pela diária do veículo.
-- **Concorrência:** a reserva usa `updateMany` condicionado a `status: 'disponivel'` dentro de `prisma.$transaction`. O banco garante que só uma de duas requisições simultâneas altere o status. A segunda recebe 409. A finalização usa a mesma técnica com `status: 'ATIVA'`.
+- **Concorrência:** a reserva consulta locações abertas e usa `updateMany` condicionado a `status: 'disponivel'` dentro de `prisma.$transaction`; a segunda de duas reservas simultâneas recebe 409. As transições da locação também condicionam a atualização ao estado anterior esperado, e a retirada/devolução/cancelamento atualiza a frota condicionalmente.
 - **Histórico:** locações e veículos não são excluídos fisicamente; veículos são inativados, e as FKs de histórico impedem remoção acidental dos registros.
 - **Erros:** `AppError` carrega o código HTTP, e o middleware de erro devolve `{ "erro": "mensagem" }`.
 
@@ -153,4 +160,4 @@ src/integrations/ adaptadores de integrações externas usados somente pelo back
 - `CategoriaVeiculo` 1:N `Veiculo`; `Filial` 1:N `Veiculo`
 - `Veiculo` N:N `OpcionalVeiculo` pela tabela `veiculo_opcionais`
 - `Veiculo` 1:N `Manutencao`, `SinistroAvaria`, `Multa` e `Vistoria`
-- E-mail e placa são únicos. `Locacao.status` é `ATIVA` ou `FINALIZADA`.
+- E-mail e placa são únicos. `Locacao.status` usa `reservada`, `retirada`, `em_andamento`, `devolvida`, `finalizada` ou `cancelada`.

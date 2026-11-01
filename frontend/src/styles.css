@@ -990,3 +990,225 @@ select {
     padding: 12px;
   }
 }
+
+/* Configurações de locação */
+.config-form {
+  display: grid;
+  gap: 18px;
+}
+.config-secao {
+  display: grid;
+  gap: 16px;
+}
+.config-secao > h2 {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--linha);
+}
+.config-corpo {
+  display: grid;
+  gap: 16px;
+}
+.config-secao h3 {
+  font-size: 1.05rem;
+  margin-top: 4px;
+}
+.config-checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+.config-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 400;
+}
+.config-check input {
+  width: auto;
+  accent-color: var(--petroleo);
+}
+.config-fieldset {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+}
+.config-fieldset legend {
+  font-weight: 700;
+  padding: 0 6px;
+}
+.config-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid #edf0f1;
+}
+.config-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.config-switch {
+  position: relative;
+  flex: 0 0 46px;
+  height: 26px;
+  border-radius: 20px;
+  background: #9ba8ad;
+  transition: background 0.15s;
+}
+.config-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.15s;
+}
+.config-toggle input:checked + .config-switch {
+  background: var(--petroleo);
+}
+.config-toggle input:checked + .config-switch::after {
+  transform: translateX(20px);
+}
+.config-toggle input:focus-visible + .config-switch {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+.config-tabelas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.config-tabela {
+  min-width: 0;
+}
+.config-tabela input {
+  min-width: 120px;
+}
+.config-protecao {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  padding: 14px;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+}
+.config-protecao > label:not(.config-check) {
+  display: grid;
+  gap: 6px;
+}
+.config-protecao > .config-check {
+  align-self: center;
+}
+.config-checklist {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.config-checklist li {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  background: #fff;
+}
+.config-checklist li.arrastando {
+  opacity: 0.55;
+}
+.config-alca {
+  cursor: grab;
+  color: var(--apoio);
+  font-size: 1.3rem;
+  touch-action: none;
+}
+.config-adicionar {
+  display: grid;
+  gap: 6px;
+}
+.config-adicionar > div {
+  display: flex;
+  gap: 8px;
+}
+.config-adicionar .botao {
+  flex: 0 0 auto;
+}
+.config-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #b9c3c8;
+  border-radius: 6px;
+  font: inherit;
+  resize: vertical;
+}
+.config-salvar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+}
+.config-salvar p {
+  margin: 0;
+}
+.selo-reservada {
+  background: #fff2d9;
+  color: #835700;
+}
+.selo-retirada {
+  background: #e8edf7;
+  color: #28467d;
+}
+.selo-andamento {
+  background: #e2f3ea;
+  color: #1f7a4d;
+}
+.selo-devolvida {
+  background: #e5f2f5;
+  color: #0e4a5c;
+}
+.selo-cancelada {
+  background: #f8e6e1;
+  color: #a8412a;
+}
+.botao-perigo {
+  background: #fff;
+  color: #963b2a;
+  border-color: #a8412a;
+}
+@media (max-width: 720px) {
+  .config-secao {
+    padding: 16px;
+  }
+  .config-protecao {
+    grid-template-columns: 1fr;
+  }
+  .config-checklist li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .config-checklist li > .config-check,
+  .config-checklist li > button {
+    grid-column: 2;
+  }
+  .config-adicionar > div,
+  .config-salvar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .config-adicionar .botao,
+  .config-salvar .botao {
+    width: 100%;
+  }
+}
