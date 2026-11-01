@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router';
 import * as locacaoService from '../services/locacaoService';
 import * as veiculoService from '../services/veiculoService';
 import { mensagemDeErro } from '../services/api';

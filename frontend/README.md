@@ -14,7 +14,7 @@ Interface React do sistema de locação de veículos. No repositório consolidad
 - Nome completo
 
 ## Requisitos
-- Node.js 18 ou superior
+- Node.js 20 ou superior
 - Backend em execução (ver pasta `../backend`)
 
 ## Instalação

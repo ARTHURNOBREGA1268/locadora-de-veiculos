@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import PlateBadge from './PlateBadge';
 import { formatarMoeda } from '../utils/format';
 

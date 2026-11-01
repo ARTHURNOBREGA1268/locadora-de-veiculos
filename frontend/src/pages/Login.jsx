@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 import { mensagemDeErro } from '../services/api';
 import Alert from '../components/Alert';
