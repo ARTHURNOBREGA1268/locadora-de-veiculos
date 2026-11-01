@@ -78,19 +78,22 @@ test('GET /usuarios retorna 401 se o usuário autenticado não existe no banco',
 
 test('registro público ignora papel ADMIN enviado pelo cliente', async t => {
   const delegate = prisma.usuario;
-  const originais = { findUnique: delegate.findUnique, create: delegate.create };
-  let dadosCriacao;
+  const originais = { findUnique: delegate.findUnique, transaction: prisma.$transaction };
+  let dadosCriacao, dadosCliente;
   delegate.findUnique = async () => null;
-  delegate.create = async ({ data, select }) => {
-    dadosCriacao = data;
-    assert.equal(select.senhaHash, undefined);
-    return { id: 3, nome: data.nome, email: data.email, papel: 'USER', criadoEm: new Date('2026-01-01') };
-  };
+  prisma.$transaction = async callback => callback({
+    usuario: { create: async ({ data, select }) => {
+      dadosCriacao = data;
+      assert.equal(select.senhaHash, undefined);
+      return { id: 3, nome: data.nome, email: data.email, papel: 'USER', criadoEm: new Date('2026-01-01') };
+    } },
+    cliente: { create: async ({ data }) => { dadosCliente = data; return { id: 4, ...data }; } }
+  });
   t.after(() => {
     if (originais.findUnique === undefined) delete delegate.findUnique;
     else delegate.findUnique = originais.findUnique;
-    if (originais.create === undefined) delete delegate.create;
-    else delegate.create = originais.create;
+    if (originais.transaction === undefined) delete prisma.$transaction;
+    else prisma.$transaction = originais.transaction;
   });
 
   const server = app.listen(0, '127.0.0.1');
@@ -109,4 +112,6 @@ test('registro público ignora papel ADMIN enviado pelo cliente', async t => {
   assert.equal(usuario.papel, 'USER');
   assert.equal(Object.hasOwn(usuario, 'senhaHash'), false);
   assert.equal(Object.hasOwn(dadosCriacao, 'papel'), false);
+  assert.equal(dadosCliente.usuarioId, usuario.id);
+  assert.equal(dadosCliente.email, usuario.email);
 });

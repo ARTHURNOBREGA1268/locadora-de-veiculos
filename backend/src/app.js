@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 const veiculoRoutes = require('./routes/veiculo.routes');
 const locacaoRoutes = require('./routes/locacao.routes');
 const usuarioRoutes = require('./routes/usuario.routes');
+const clienteRoutes = require('./routes/cliente.routes');
 const configuracaoRoutes = require('./routes/configuracao.routes');
 const precificacaoRoutes = require('./routes/precificacao.routes');
 const { naoEncontrado, tratarErros } = require('./middlewares/error.middleware');
@@ -29,6 +30,7 @@ app.use('/auth', authRoutes);
 app.use('/veiculos', veiculoRoutes);
 app.use('/locacoes', locacaoRoutes);
 app.use('/usuarios', usuarioRoutes);
+app.use('/clientes', clienteRoutes);
 app.use('/configuracoes', configuracaoRoutes);
 app.use('/precificacao', precificacaoRoutes);
 

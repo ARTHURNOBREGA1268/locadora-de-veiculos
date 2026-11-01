@@ -1,7 +1,7 @@
 const service = require("../services/precificacao.service");
 
 async function cotar(req, res) {
-  res.json(await service.cotar(req.body || {}, req.userId));
+  res.json(await service.cotar(req.body || {}, req.userId, req.userRole));
 }
 async function opcoes(req, res) {
   res.json(await service.obterOpcoes(req.params.veiculoId));

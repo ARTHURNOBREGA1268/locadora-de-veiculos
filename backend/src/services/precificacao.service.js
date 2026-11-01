@@ -387,20 +387,36 @@ async function listarHistorico({ origem, registroId, limit = 100 } = {}) {
   });
 }
 
+async function obterConfiguracaoLocacao(tx) {
+  return tx.configuracaoLocacao.upsert({
+    where: { id: 1 },
+    create: { id: 1, documentosExigidos: ["CNH válida", "Documento de identidade"] },
+    update: {},
+  });
+}
+
 async function obterOpcoes(veiculoRaw) {
   const veiculoId = idValido(veiculoRaw, "veiculoId");
-  const veiculo = await prisma.veiculo.findUnique({ where: { id: veiculoId }, select: { id: true, categoriaId: true, status: true } });
+  const veiculo = await prisma.veiculo.findUnique({ where: { id: veiculoId }, select: { id: true, categoriaId: true, filialId: true, status: true } });
   if (!veiculo) throw new AppError("Veículo não encontrado", 404);
-  if (veiculo.status !== "disponivel") throw new AppError("Veículo indisponível para cotação", 409);
-  const locacaoAtiva = await prisma.locacao.findFirst({ where: { veiculoId, status: { in: ["reservada", "retirada", "em_andamento"] } }, select: { id: true } });
-  if (locacaoAtiva) throw new AppError("Veículo possui locação ativa", 409);
-  const [adicionais, precosProtecao, caucao, config, convenios] = await Promise.all([
+  if (["inativo", "manutencao"].includes(veiculo.status)) throw new AppError("Veículo indisponível para cotação", 409);
+  const [adicionais, precosProtecao, caucao, config, convenios, configLocacao, filiaisRetiradaConfiguradas, filiaisDevolucaoConfiguradas, todasFiliais] = await Promise.all([
     prisma.adicional.findMany({ where: { ativo: true }, orderBy: { nome: "asc" } }),
     prisma.protecaoPreco.findMany({ where: { ativo: true, OR: [{ categoriaId: veiculo.categoriaId }, { categoriaId: null }] }, include: { protecao: true }, orderBy: { id: "asc" } }),
     prisma.caucaoCategoria.findUnique({ where: { configId_categoriaId: { configId: 1, categoriaId: veiculo.categoriaId } } }),
     obterConfig(),
     prisma.convenio.findMany({ where: { ativo: true }, select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
+    obterConfiguracaoLocacao(prisma),
+    prisma.configFilial.findMany({ where: { configId: 1, tipo: "retirada" }, include: { filial: { select: { id: true, nome: true } } }, orderBy: { filial: { nome: "asc" } } }),
+    prisma.configFilial.findMany({ where: { configId: 1, tipo: "devolucao" }, include: { filial: { select: { id: true, nome: true } } }, orderBy: { filial: { nome: "asc" } } }),
+    prisma.filial.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
   ]);
+  const filiaisRetirada = filiaisRetiradaConfiguradas.length
+    ? filiaisRetiradaConfiguradas.map((item) => item.filial)
+    : todasFiliais.filter((item) => item.id === veiculo.filialId);
+  const filiaisDevolucao = filiaisDevolucaoConfiguradas.length
+    ? filiaisDevolucaoConfiguradas.map((item) => item.filial)
+    : configLocacao.permiteDevolucaoOutraFilial ? todasFiliais : filiaisRetirada;
   const byProtection = new Map();
   for (const row of precosProtecao) {
     if (!row.protecao.ativo) continue;
@@ -419,6 +435,9 @@ async function obterOpcoes(veiculoRaw) {
     adicionais,
     protecoes,
     convenios,
+    filialVeiculoId: veiculo.filialId,
+    filiaisRetirada,
+    filiaisDevolucao,
     valorCaucao: caucao?.valor ?? null,
     taxasDisponiveis: {
       taxaReposicaoCombustivel: config.taxaReposicaoCombustivel,
@@ -429,6 +448,17 @@ async function obterOpcoes(veiculoRaw) {
       taxaEntregaDomicilioFixa: config.taxaEntregaDomicilioFixa,
       taxaEntregaPorKm: config.taxaEntregaPorKm,
       parcelamentoMax: config.parcelamentoMax,
+    },
+    configuracaoLocacao: {
+      exigeCartaoCredito: configLocacao.exigeCartaoCredito,
+      permiteMotoristaAdicional: configLocacao.permiteMotoristaAdicional,
+      maxMotoristasAdicionais: configLocacao.maxMotoristasAdicionais,
+      kmLivre: configLocacao.kmLivre,
+      kmFranquiaDiaria: configLocacao.kmFranquiaDiaria,
+      permiteDevolucaoOutraFilial: configLocacao.permiteDevolucaoOutraFilial,
+      permiteEntregaDomicilio: configLocacao.permiteEntregaDomicilio,
+      permiteRetiradaAeroporto: configLocacao.permiteRetiradaAeroporto,
+      raioEntregaKm: configLocacao.raioEntregaKm,
     },
   };
 }
@@ -448,16 +478,30 @@ async function calcularOcupacao(tx, categoriaId, inicio, fim, qtdDiarias) {
   return Math.min(100, capacity ? (occupiedDays / capacity) * 100 : 0);
 }
 
-async function prepararCotacao(tx, usuarioId, body) {
+async function prepararCotacao(tx, usuarioId, userRole, body) {
   objeto(body, "Dados da cotação");
-  camposPermitidos(body, ["veiculoId", "dataInicio", "dataPrevistaDevolucao", "adicionais", "protecoes", "cupom", "convenioId", "taxas", "formaPagamento", "parcelas"]);
+  camposPermitidos(body, ["veiculoId", "dataInicio", "dataPrevistaDevolucao", "clienteId", "adicionais", "protecoes", "cupom", "convenioId", "taxas", "formaPagamento", "parcelas"]);
   const veiculoId = idValido(body.veiculoId, "veiculoId");
+  if (userRole === "ADMIN" && body.clienteId === undefined) throw new AppError("ADMIN deve informar o cliente da cotação", 400);
+  if (body.clienteId !== undefined && userRole !== "ADMIN") throw new AppError("Somente ADMIN pode selecionar outro cliente", 403);
+  const clienteIdSolicitado = userRole === "ADMIN" && body.clienteId !== undefined
+    ? idValido(body.clienteId, "clienteId")
+    : null;
+  const cliente = clienteIdSolicitado
+    ? await tx.cliente.findUnique({ where: { id: clienteIdSolicitado }, select: { id: true, ativo: true } })
+    : await tx.cliente.findUnique({ where: { usuarioId }, select: { id: true, ativo: true } });
+  if (!cliente || !cliente.ativo) throw new AppError("Cliente não encontrado ou inativo", 404);
+  const clienteId = cliente.id;
   const { inicio, fim, inicioData, qtdDiarias } = calculo.calcularQuantidadeDiarias(body.dataInicio, body.dataPrevistaDevolucao);
   const veiculo = await tx.veiculo.findUnique({ where: { id: veiculoId }, include: { categoria: true, custosPrecificacao: true } });
   if (!veiculo) throw new AppError("Veículo não encontrado", 404);
-  if (veiculo.status !== "disponivel") throw new AppError("Veículo indisponível para cotação", 409);
-  const locacaoAtiva = await tx.locacao.findFirst({ where: { veiculoId, status: { in: ["reservada", "retirada", "em_andamento"] } }, select: { id: true } });
-  if (locacaoAtiva) throw new AppError("Veículo possui locação ativa e não pode ser cotado", 409);
+  if (["inativo", "manutencao"].includes(veiculo.status)) throw new AppError("Veículo indisponível para cotação", 409);
+  const conflito = await tx.locacao.findFirst({
+    where: { veiculoId, status: { in: ["reservada", "retirada", "em_andamento"] }, dataInicio: { lt: fim }, dataPrevistaDevolucao: { gt: inicio } },
+    select: { id: true },
+  });
+  if (conflito) throw new AppError("Veículo possui locação ativa no período solicitado", 409);
+  const configLocacao = await obterConfiguracaoLocacao(tx);
   const config = await obterConfig(tx);
   const tarifas = await tx.tarifaBase.findMany({
     where: { categoriaId: veiculo.categoriaId, ativo: true, vigenciaInicio: { lte: inicioData }, OR: [{ vigenciaFim: null }, { vigenciaFim: { gte: inicioData } }] },
@@ -503,16 +547,13 @@ async function prepararCotacao(tx, usuarioId, body) {
     if (promocao.convenioId && promocao.convenioId !== (body.convenioId ? idValido(body.convenioId, "convenioId") : null)) throw new AppError("Cupom exige convênio elegível", 400);
     if (promocao.limiteUsosTotal !== null && promocao.usosRealizados >= promocao.limiteUsosTotal) throw new AppError("Limite total de uso do cupom atingido", 409);
     if (promocao.limiteUsosPorCliente !== null) {
-      if (!usuarioId) throw new AppError("Identificação do cliente obrigatória para este cupom", 400);
-      const count = await tx.usoPromocao.count({ where: { promocaoId: promocao.id, usuarioId } });
+      const count = await tx.usoPromocao.count({ where: { promocaoId: promocao.id, clienteId } });
       if (count >= promocao.limiteUsosPorCliente) throw new AppError("Limite de uso deste cupom por cliente atingido", 409);
     }
   }
   let nivelFidelidade = null;
-  if (usuarioId) {
-    const concluidas = await tx.locacao.count({ where: { usuarioId, status: "finalizada" } });
-    nivelFidelidade = await tx.nivelFidelidade.findFirst({ where: { ativo: true, locacoesMinimas: { lte: concluidas } }, orderBy: { locacoesMinimas: "desc" } });
-  }
+  const concluidas = await tx.locacao.count({ where: { clienteId, status: "finalizada" } });
+  nivelFidelidade = await tx.nivelFidelidade.findFirst({ where: { ativo: true, locacoesMinimas: { lte: concluidas } }, orderBy: { locacoesMinimas: "desc" } });
   const caucaoRow = await tx.caucaoCategoria.findUnique({ where: { configId_categoriaId: { configId: 1, categoriaId: veiculo.categoriaId } } });
   const taxas = body.taxas ?? {};
   objeto(taxas, "taxas");
@@ -521,18 +562,22 @@ async function prepararCotacao(tx, usuarioId, body) {
   camposPermitidos(taxas, [...taxasBooleanas, ...taxasNumericas]);
   for (const field of taxasBooleanas) if (Object.hasOwn(taxas, field)) booleano(taxas[field], `taxas.${field}`);
   for (const field of taxasNumericas) if (Object.hasOwn(taxas, field)) decimalValue(taxas[field], `taxas.${field}`, { min: 0, max: 99999999.99 });
+  const formaOriginal = body.formaPagamento ?? null;
+  if (formaOriginal !== null && !["credito", "debito", "cartao", "pix", "dinheiro", "boleto", "faturado"].includes(formaOriginal)) throw new AppError("formaPagamento inválida", 400);
+  if (configLocacao.exigeCartaoCredito && !["credito", "cartao"].includes(formaOriginal)) throw new AppError("É necessário selecionar cartão de crédito", 400);
+  const formaCalculo = ["credito", "debito"].includes(formaOriginal) ? "cartao" : formaOriginal;
   const result = calculo.calcularPreco({
     veiculo, custoVeiculo: veiculo.custosPrecificacao, config, tarifa, regras, adicionais, protecoes, promocao, nivelFidelidade,
     ocupacaoPercentual, categoriaPiso: pisoRow?.valor ?? null,
     dataInicio: inicio, dataDevolucao: fim,
-    taxas, formaPagamento: body.formaPagamento ?? null, parcelas: body.parcelas ?? 1, caucao: caucaoRow?.valor ?? null,
+    taxas, formaPagamento: formaCalculo, parcelas: body.parcelas ?? 1, caucao: caucaoRow?.valor ?? null,
   });
-  return { ...result, promocaoId: promocao?.id ?? null, usuarioId: usuarioId ?? null };
+  return { ...result, promocaoId: promocao?.id ?? null, clienteId };
 }
-async function cotar(body, usuarioId) {
-  return prisma.$transaction((tx) => prepararCotacao(tx, usuarioId, body), { isolationLevel: "Serializable" });
+async function cotar(body, usuarioId, userRole) {
+  return prisma.$transaction((tx) => prepararCotacao(tx, usuarioId, userRole, body), { isolationLevel: "Serializable" });
 }
-async function salvarSnapshot(tx, locacaoId, quote, usuarioId) {
+async function salvarSnapshot(tx, locacaoId, quote) {
   const id = idValido(locacaoId, "locacaoId");
   if (quote.promocaoId) {
     const promo = await tx.promocao.findUnique({ where: { id: quote.promocaoId } });
@@ -541,10 +586,10 @@ async function salvarSnapshot(tx, locacaoId, quote, usuarioId) {
     const changed = await tx.promocao.updateMany({ where, data: { usosRealizados: { increment: 1 } } });
     if (!changed.count) throw new AppError("Limite de uso do cupom atingido durante a confirmação", 409);
     if (promo.limiteUsosPorCliente !== null) {
-      const count = await tx.usoPromocao.count({ where: { promocaoId: promo.id, usuarioId } });
+      const count = await tx.usoPromocao.count({ where: { promocaoId: promo.id, clienteId: quote.clienteId } });
       if (count >= promo.limiteUsosPorCliente) throw new AppError("Limite por cliente atingido durante a confirmação", 409);
     }
-    await tx.usoPromocao.create({ data: { promocaoId: promo.id, usuarioId, locacaoId: id, descontoAplicado: quote.detalhes.descontoPromocao.valor } });
+    await tx.usoPromocao.create({ data: { promocaoId: promo.id, clienteId: quote.clienteId, locacaoId: id, descontoAplicado: quote.detalhes.descontoPromocao.valor } });
   }
   return tx.locacaoPreco.create({
     data: {

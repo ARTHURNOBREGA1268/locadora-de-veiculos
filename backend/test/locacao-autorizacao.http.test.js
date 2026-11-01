@@ -33,6 +33,7 @@ test("usuário autenticado não consegue consultar nem finalizar locação de ou
       return {
         id: args.where.id,
         usuarioId: 11,
+        cliente: { id: 18, usuarioId: 11 },
         veiculoId: 7,
         status: "em_andamento",
         veiculo: { id: 7, status: "alugado" },

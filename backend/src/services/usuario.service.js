@@ -84,9 +84,13 @@ async function criar(dados = {}) {
   const senhaHash = await bcrypt.hash(dados.senha, 10);
 
   try {
-    return await prisma.usuario.create({
-      data: { nome, email, senhaHash, papel },
-      select: selectPublico
+    return await prisma.$transaction(async tx => {
+      const usuario = await tx.usuario.create({
+        data: { nome, email, senhaHash, papel },
+        select: selectPublico
+      });
+      await tx.cliente.create({ data: { nome, email, usuarioId: usuario.id } });
+      return usuario;
     });
   } catch (error) {
     conflitoDuplicado(error);

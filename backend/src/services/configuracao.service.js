@@ -389,11 +389,12 @@ async function atualizar(b) {
             })),
           });
       }
-      await tx.checklistItem.deleteMany({
+      await tx.checklistItem.updateMany({
         where: {
           configId: 1,
           ...(checklistIds.length ? { id: { notIn: checklistIds } } : {}),
         },
+        data: { ativo: false },
       });
       for (const x of checklistItens) {
         if (x.id)

@@ -1,22 +1,32 @@
-# Plano: precificação de locações
+# Plano do sistema: precificação e locações
 
 ## Objetivo
-Implementar um módulo de precificação API-first, com cálculo autoritativo no backend, administração restrita a ADMIN e snapshot imutável na confirmação da locação. O dashboard React permanece cliente da API existente; reutiliza a navegação, formulários, validações e padrões visuais já usados nas páginas administrativas.
+Manter a API como fonte autoritativa do sistema, com o frontend consumindo endpoints internos. O módulo de precificação conserva o cálculo do backend, autorização ADMIN para configuração e snapshot imutável na confirmação. O módulo de locações passa a ter cadastro, listagem administrativa, visão do cliente, dados operacionais e histórico compatíveis com o formato especificado, sem edição manual de status e sem exclusão física de registros.
 
 ## Arquitetura e pastas
-- `backend/prisma/schema.prisma` e `backend/prisma/migrations/`: tabelas de tarifas, custos operacionais, regras, adicionais, proteções, promoções, fidelidade, histórico e preço congelado.
-- `backend/src/services/precificacao.service.js`: validações, CRUD administrativo, cálculo determinístico e composição do preço.
-- `backend/src/controllers/`, `backend/src/routes/`, `backend/src/app.js`: endpoints REST com autorização ADMIN para gestão; cotação/confirmação calcula sempre no backend.
-- `backend/src/services/locacao.service.js`: cria locação e snapshot do preço atomicamente; mantém `Locacao.valorTotal` igual a `locacao_precos.valor_total`.
-- `frontend/src/pages/Precificacao.jsx` e `frontend/src/services/precificacaoService.js`: administração e consulta de cotações pela API, sem cálculos monetários autoritativos no navegador.
-- `backend/test/`: validações, cálculo, autorização, transações, concorrência e integração MySQL.
+- `backend/prisma/schema.prisma` e `backend/prisma/migrations/`: dados relacionais de clientes, locações, motoristas, itens vinculados, cobranças, pagamentos, vistorias e histórico.
+- `backend/src/services/locacao.service.js`: regras transacionais de disponibilidade por período, criação/edição/cancelamento, transições automáticas, vistoria e snapshots.
+- `backend/src/controllers/`, `backend/src/routes/`, `backend/src/app.js`: APIs REST autenticadas, com escopo USER por cliente vinculado e visão administrativa exclusiva para ADMIN.
+- `backend/src/services/precificacao.service.js`: mantém a cotação e preço congelado; itens relacionais devem reproduzir os valores calculados pelo backend.
+- `frontend/src/pages/Locacoes.jsx`, `frontend/src/components/LocacaoList.jsx` e `LocacaoForm.jsx`: tabela responsiva com detalhe por seções; reserva, cliente, período, logística, vistoria e visão financeira conforme papel.
+- `backend/test/`: regressões de migration, autorização, disponibilidade concorrente, transições, cobranças e snapshot.
 
-## Regras confirmadas
+## Decisões de domínio para locações
+1. `Cliente` é uma entidade separada de `Usuario`. `Cliente.usuarioId` será opcional e único para associar um login USER a um cadastro de cliente; ADMIN pode cadastrar clientes sem login. CPF é opcional/único para preservar contas históricas sem CPF e habilitar busca por nome ou CPF quando informado. Usuários existentes serão migrados para cadastros de cliente associados, sem inventar CPF. O vínculo pode ser alterado apenas antes da primeira locação; depois torna-se imutável para impedir transferência de acesso ao histórico.
+2. `Locacao.clienteId` referencia `Cliente`; `atendenteId` referencia `Usuario` e registra o ADMIN que criou a reserva em nome de outra pessoa. USER só consulta e opera locações do Cliente vinculado à própria conta; ADMIN tem a visão administrativa. Totais e caução são visíveis ao titular de sua reserva e a ADMIN, não a outros usuários.
+3. O campo de categoria na locação é snapshot da categoria reservada, mesmo se o veículo for reclassificado depois. `codigo` é gerado pelo backend e somente leitura. Campos calculados, financeiros e derivados de vistorias nunca são aceitos como autoridade do payload do navegador.
+4. A migration será incremental, preservando IDs, preços, datas e estados. Campos históricos sem fonte (categoria congelada, origem e filiais) permanecem `NULL`; novas reservas sempre recebem categoria e filiais validadas pelo serviço. Nomes SQL usam snake_case e o DTO HTTP permanece camelCase. FKs históricas usam restrição; registros são cancelados/inativados, nunca apagados.
+5. O status continua exclusivamente pela máquina atual `reservada → retirada → em_andamento → devolvida → finalizada`, com cancelamento apenas antes da retirada. Cada mudança grava `locacao_status_historico` na mesma transação. Retirada/devolução reais, km e combustível são registrados por transições e vistorias, não por edição livre de status.
+6. Pagamentos são um razão de eventos somente leitura na UI. O projeto não possui gateway: reservas e cauções ficam pendentes até integração/registro explícito, `gateway_id` e `pago_em` permanecem nulos, e não se simula captura, estorno ou caução retida.
+7. Totais, diárias, adicionais, proteções, descontos, promoção, caução e contrato usam snapshot. Cotações novas e alterações administrativas nunca mudam o histórico confirmado.
+8. Vistorias validam os itens ativos e obrigatórios e guardam respostas/descrições como snapshot JSON. ADMIN pode incluir cobranças avulsas após devolução e antes de finalizar, criando saldo pendente; pode também registrar uma vez a assinatura física do texto contratual congelado, sem simular gateway ou assinatura digital.
+
+## Regras já implementadas de precificação
 1. A fórmula de custos gera o mínimo diário recomendado. A tarifa base por categoria é o preço publicado e não pode ficar abaixo do maior entre esse mínimo e o piso configurado.
 2. Tarifas semanais e mensais são totais por pacotes de 7 e 30 diárias; o motor compara composições possíveis e escolhe a menor válida.
 3. Regras dinâmicas são processadas por prioridade crescente; percentuais aplicam-se sequencialmente e ajustes fixos são por diária. Regra não acumulável não se soma a outra regra dinâmica elegível.
-4. Cupom e fidelidade reduzem somente o subtotal das diárias, limitados ao excedente acima do custo mínimo e do piso configurado; a API indica quando limita um desconto. Adicionais, proteções e caução ficam separados; impostos/taxas são calculados após os descontos. Caução não integra o total, mas seu valor vigente é congelado no snapshot da locação.
-5. O limite de uso de cupom por cliente requer registro individual de uso ligado a cliente/locação além do contador total. Dados operacionais de custos inexistentes serão configuráveis e não serão preenchidos com valores fictícios.
+4. Cupom e fidelidade reduzem somente o subtotal das diárias, limitados ao excedente acima do custo mínimo e do piso configurado; a API indica quando limita um desconto. Adicionais, proteções e caução ficam separados; impostos/taxas são calculados após os descontos. Caução não integra o total, mas seu valor vigente é congelado no snapshot.
+5. O limite de uso de cupom por cliente usa registro individual ligado a cliente/locação além do contador total. Custos operacionais ausentes são configuráveis e não são preenchidos com valores fictícios.
 
 ## Fórmula de referência
 - Depreciação diária: `(valor de compra − valor de revenda estimado) / (vida útil em meses × 30)`.
@@ -26,11 +36,12 @@ Implementar um módulo de precificação API-first, com cálculo autoritativo no
 - Preço mínimo diário recomendado: `custo por diária alugada / (1 − margem desejada)`; depois aplicam-se fatores tarifários elegíveis.
 - Valores monetários permanecem em `DECIMAL`; a API arredonda para centavos segundo política única e valida totais antes de persistir.
 
-## Fluxo
-1. ADMIN mantém custos por veículo/parâmetros gerais, tarifas por categoria e vigência, regras dinâmicas e demais tabelas de preço.
-2. Cotação recebe veículo, período, opcionais/proteções e cupom; backend valida disponibilidade, calcula composição e devolve detalhamento.
-3. Confirmação recalcula as condições vigentes, valida limites de promoção e grava locação, valor total e snapshot em uma transação.
-4. Histórico de locação lê exclusivamente o snapshot salvo; alterações futuras em tarifas/regras não mudam preços confirmados.
+## Fluxos e API
+1. ADMIN mantém clientes, parâmetros, tarifas e demais cadastros. USER autenticado reserva para o Cliente associado à própria conta; ADMIN pode selecionar Cliente por nome/CPF e registrar o atendente.
+2. `POST /locacoes` recebe seleções de cliente/veículo/período/logística e itens permitidos; API valida disponibilidade do intervalo e regras, calcula preço e grava locação, itens e snapshot numa transação.
+3. `GET /locacoes` retorna somente locações próprias ao USER e lista administrativa ao ADMIN; `GET /locacoes/:id` verifica propriedade ou papel ADMIN. DTOs minimizam campos pessoais/financeiros de terceiros.
+4. Transições de retirada, início, devolução, finalização e cancelamento têm endpoints dedicados; não existe seletor manual livre de status. Vistorias atualizam km, combustível e referências conforme tipo.
+5. Histórico mostra preço congelado, itens, pagamentos pendentes/registrados, cobranças, vistorias, contrato e timeline de status sem recalcular valores antigos.
 
 ## Compatibilidade
-Não usar `Veiculo.valorDiaria` silenciosamente como fallback. Tarifas legadas devem ser convertidas por migração explícita ou configuradas no cadastro de tarifa base. Uma tarifa ausente ou ambígua gera erro claro, nunca preço zero ou seleção arbitrária.
+Não usar `Veiculo.valorDiaria` silenciosamente como fallback. Tarifas legadas exigem migration explícita ou cadastro de tarifa base. Para locações antigas, backfill preserva campos existentes, associa Cliente pela conta USER e mantém campos operacionais desconhecidos como NULL.

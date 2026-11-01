@@ -42,6 +42,7 @@ test("API bloqueia configuração para USER e rejeita transição locatícia for
     value: async () => ({
       id: 8,
       usuarioId: 7,
+      cliente: { id: 14, usuarioId: 7 },
       veiculoId: 9,
       status: "reservada",
       veiculo: { id: 9, status: "reservado" },

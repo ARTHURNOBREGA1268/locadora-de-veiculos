@@ -8,6 +8,7 @@ exports.listar = async (req, res) =>
     await service.listar({
       disponivel: req.query.disponivel,
       status: req.query.status,
+      userRole: req.userRole,
     }),
   );
 exports.metadados = async (req, res) => res.json(await service.metadados());

@@ -320,7 +320,7 @@ function calcularPreco(params) {
     if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > Number(config.parcelamentoMax || 1))
       throw new AppError("Quantidade de parcelas inválida", 400);
     if (parcelas > 1) jurosParcelamento = baseTributavel.times(configTaxa("parcelamentoJurosPercentual")).div(100).times(parcelas - 1);
-  } else if (formaPagamento && formaPagamento !== "pix" && formaPagamento !== "dinheiro") {
+  } else if (formaPagamento && !["pix", "dinheiro", "boleto", "faturado"].includes(formaPagamento)) {
     throw new AppError("Forma de pagamento inválida", 400);
   }
   const impostosTaxas = iss.plus(taxaCartao).plus(jurosParcelamento).toDecimalPlaces(2, Decimal.ROUND_HALF_UP);

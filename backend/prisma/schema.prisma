@@ -16,6 +16,54 @@ enum StatusLocacao {
   cancelada
 }
 
+enum OrigemLocacao {
+  balcao
+  site
+  telefone
+  app
+  convenio
+}
+
+enum StatusCaucao {
+  pendente
+  retida
+  liberada
+  utilizada
+}
+
+enum FormaPagamentoLocacao {
+  credito
+  debito
+  pix
+  boleto
+  dinheiro
+  faturado
+}
+
+enum TipoPagamentoLocacao {
+  reserva
+  caucao
+  saldo
+  estorno
+}
+
+enum StatusPagamentoLocacao {
+  pendente
+  pago
+  falhou
+  estornado
+}
+
+enum TipoCobrancaExtraLocacao {
+  km_excedente
+  combustivel
+  limpeza
+  atraso
+  avaria
+  multa_transito
+  outros
+}
+
 enum PapelUsuario {
   USER
   ADMIN
@@ -90,17 +138,36 @@ enum TipoDescontoPromocao {
 }
 
 model Usuario {
-  id               Int               @id @default(autoincrement())
-  nome             String
-  email            String            @unique
-  senhaHash        String
-  criadoEm         DateTime          @default(now())
-  papel            PapelUsuario      @default(USER)
-  ativo            Boolean           @default(true)
-  tokenVersion     Int               @default(0)
-  locacoes         Locacao[]
-  historicoTarifas HistoricoTarifa[]
-  usosPromocao     UsoPromocao[]
+  id                     Int                      @id @default(autoincrement())
+  nome                   String
+  email                  String                   @unique
+  senhaHash              String
+  criadoEm               DateTime                 @default(now())
+  papel                  PapelUsuario             @default(USER)
+  ativo                  Boolean                  @default(true)
+  tokenVersion           Int                      @default(0)
+  cliente                Cliente?
+  locacoesAtendidas      Locacao[]                @relation("AtendenteLocacao")
+  historicoTarifas       HistoricoTarifa[]
+  historicoStatusLocacao LocacaoStatusHistorico[]
+}
+
+model Cliente {
+  id           Int                @id @default(autoincrement())
+  nome         String             @db.VarChar(120)
+  cpf          String?            @unique @db.VarChar(11)
+  email        String?            @db.VarChar(191)
+  telefone     String?            @db.VarChar(30)
+  usuarioId    Int?               @unique @map("usuario_id")
+  ativo        Boolean            @default(true)
+  usuario      Usuario?           @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  locacoes     Locacao[]
+  motoristas   LocacaoMotorista[]
+  usosPromocao UsoPromocao[]
+  createdAt    DateTime           @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@map("clientes")
 }
 
 model CategoriaVeiculo {
@@ -116,17 +183,20 @@ model CategoriaVeiculo {
   pisosPreco     PrecoPisoCategoria[]
   promocoes      Promocao[]
   precosProtecao ProtecaoPreco[]
+  locacoes       Locacao[]
 
   @@map("categorias_veiculo")
 }
 
 model Filial {
-  id            Int            @id @default(autoincrement())
-  nome          String         @unique @db.VarChar(80)
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt     DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
-  veiculos      Veiculo[]
-  configuracoes ConfigFilial[]
+  id                Int            @id @default(autoincrement())
+  nome              String         @unique @db.VarChar(80)
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamp(0)
+  veiculos          Veiculo[]
+  configuracoes     ConfigFilial[]
+  locacoesRetirada  Locacao[]      @relation("FilialRetiradaLocacao")
+  locacoesDevolucao Locacao[]      @relation("FilialDevolucaoLocacao")
 
   @@map("filiais")
 }
@@ -209,23 +279,76 @@ model VeiculoOpcional {
 }
 
 model Locacao {
-  id                    Int           @id @default(autoincrement())
-  usuarioId             Int
-  veiculoId             Int
-  dataInicio            DateTime
-  dataPrevistaDevolucao DateTime
-  dataDevolucaoEfetiva  DateTime?
-  valorTotal            Decimal       @db.Decimal(10, 2)
-  status                StatusLocacao @default(reservada)
-  usuario               Usuario       @relation(fields: [usuarioId], references: [id])
-  veiculo               Veiculo       @relation(fields: [veiculoId], references: [id])
+  id                    Int                      @id @default(autoincrement())
+  codigo                String                   @unique @db.VarChar(20)
+  clienteId             Int                      @map("cliente_id")
+  veiculoId             Int                      @map("veiculo_id")
+  categoriaId           Int?                     @map("categoria_id")
+  status                StatusLocacao            @default(reservada)
+  origem                OrigemLocacao?
+  atendenteId           Int?                     @map("atendente_id")
+  dataInicio            DateTime                 @map("retirada_prevista") @db.DateTime(3)
+  dataPrevistaDevolucao DateTime                 @map("devolucao_prevista") @db.DateTime(3)
+  retiradaReal          DateTime?                @map("retirada_real") @db.DateTime(3)
+  dataDevolucaoEfetiva  DateTime?                @map("devolucao_real") @db.DateTime(3)
+  qtdDiariasPrevistas   Int                      @map("qtd_diarias_previstas") @db.UnsignedSmallInt
+  qtdDiariasCobradas    Int?                     @map("qtd_diarias_cobradas") @db.UnsignedSmallInt
+  filialRetiradaId      Int?                     @map("filial_retirada_id")
+  filialDevolucaoId     Int?                     @map("filial_devolucao_id")
+  entregaDomicilio      Boolean                  @default(false) @map("entrega_domicilio")
+  enderecoEntrega       String?                  @map("endereco_entrega") @db.VarChar(255)
+  enderecoColeta        String?                  @map("endereco_coleta") @db.VarChar(255)
+  distanciaEntregaKm    Decimal?                 @map("distancia_entrega_km") @db.Decimal(6, 2)
+  vooNumero             String?                  @map("voo_numero") @db.VarChar(10)
+  kmSaida               Int?                     @map("km_saida") @db.UnsignedInt
+  kmEntrada             Int?                     @map("km_entrada") @db.UnsignedInt
+  kmFranquiaTotal       Int?                     @map("km_franquia_total") @db.UnsignedInt
+  kmExcedente           Int?                     @map("km_excedente") @db.UnsignedInt
+  combustivelSaida      Int?                     @map("combustivel_saida") @db.UnsignedTinyInt
+  combustivelEntrada    Int?                     @map("combustivel_entrada") @db.UnsignedTinyInt
+  valorTotal            Decimal                  @map("valor_total") @db.Decimal(12, 2)
+  valorFinalCobrado     Decimal?                 @map("valor_final_cobrado") @db.Decimal(12, 2)
+  caucaoValor           Decimal?                 @map("caucao_valor") @db.Decimal(10, 2)
+  caucaoStatus          StatusCaucao             @default(pendente) @map("caucao_status")
+  formaPagamento        FormaPagamentoLocacao?   @map("forma_pagamento")
+  parcelas              Int?                     @db.UnsignedTinyInt
+  promocaoId            Int?                     @map("promocao_id")
+  canceladaEm           DateTime?                @map("cancelada_em") @db.DateTime(3)
+  motivoCancelamento    String?                  @map("motivo_cancelamento") @db.VarChar(255)
+  multaCancelamento     Decimal?                 @map("multa_cancelamento") @db.Decimal(10, 2)
+  vistoriaSaidaId       Int?                     @unique @map("vistoria_saida_id")
+  vistoriaEntradaId     Int?                     @unique @map("vistoria_entrada_id")
+  contratoTexto         String?                  @map("contrato_texto") @db.LongText
+  contratoAssinado      Boolean                  @default(false) @map("contrato_assinado")
+  contratoAssinadoEm    DateTime?                @map("contrato_assinado_em") @db.DateTime(3)
+  observacoes           String?                  @db.Text
+  cliente               Cliente                  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  veiculo               Veiculo                  @relation(fields: [veiculoId], references: [id], onDelete: Restrict)
+  categoria             CategoriaVeiculo?        @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  atendente             Usuario?                 @relation("AtendenteLocacao", fields: [atendenteId], references: [id], onDelete: Restrict)
+  filialRetirada        Filial?                  @relation("FilialRetiradaLocacao", fields: [filialRetiradaId], references: [id], onDelete: Restrict)
+  filialDevolucao       Filial?                  @relation("FilialDevolucaoLocacao", fields: [filialDevolucaoId], references: [id], onDelete: Restrict)
+  promocao              Promocao?                @relation("LocacaoPromocao", fields: [promocaoId], references: [id], onDelete: Restrict)
+  vistoriaSaida         Vistoria?                @relation("LocacaoVistoriaSaida", fields: [vistoriaSaidaId], references: [id], onDelete: Restrict)
+  vistoriaEntrada       Vistoria?                @relation("LocacaoVistoriaEntrada", fields: [vistoriaEntradaId], references: [id], onDelete: Restrict)
   multas                Multa[]
-  vistorias             Vistoria[]
+  vistorias             Vistoria[]               @relation("VistoriasDaLocacao")
+  motoristas            LocacaoMotorista[]
+  adicionais            LocacaoAdicional[]
+  protecoes             LocacaoProtecao[]
+  cobrancasExtras       LocacaoCobrancaExtra[]
+  pagamentos            LocacaoPagamento[]
+  historicoStatus       LocacaoStatusHistorico[]
   preco                 LocacaoPreco?
   usoPromocao           UsoPromocao?
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt             DateTime                 @updatedAt @map("updated_at") @db.DateTime(0)
 
-  @@index([usuarioId])
-  @@index([veiculoId])
+  @@index([clienteId, status])
+  @@index([veiculoId, status, dataInicio, dataPrevistaDevolucao])
+  @@index([categoriaId])
+  @@index([atendenteId])
+  @@map("locacoes")
 }
 
 model Manutencao {
@@ -285,9 +408,12 @@ model Vistoria {
   km               Int          @db.UnsignedInt
   nivelCombustivel Int          @map("nivel_combustivel") @db.UnsignedTinyInt
   observacoes      String?      @map("observacoes") @db.Text
+  itensChecklist   Json?        @map("itens_checklist") @db.Json
   locacaoId        Int?         @map("locacao_id")
   veiculo          Veiculo      @relation(fields: [veiculoId], references: [id], onDelete: Restrict)
-  locacao          Locacao?     @relation(fields: [locacaoId], references: [id], onDelete: SetNull)
+  locacao          Locacao?     @relation("VistoriasDaLocacao", fields: [locacaoId], references: [id], onDelete: SetNull)
+  comoSaida        Locacao?     @relation("LocacaoVistoriaSaida")
+  comoEntrada      Locacao?     @relation("LocacaoVistoriaEntrada")
   createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamp(0)
   updatedAt        DateTime     @updatedAt @map("updated_at") @db.Timestamp(0)
 
@@ -347,14 +473,15 @@ model ConfiguracaoLocacao {
 }
 
 model Protecao {
-  id            Int              @id @default(autoincrement())
-  nome          String           @db.VarChar(80)
-  descricao     String?          @db.Text
-  ativo         Boolean          @default(true)
-  createdAt     DateTime         @default(now()) @map("created_at") @db.DateTime(0)
-  updatedAt     DateTime         @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+  id            Int               @id @default(autoincrement())
+  nome          String            @db.VarChar(80)
+  descricao     String?           @db.Text
+  ativo         Boolean           @default(true)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime          @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
   configuracoes ProtecaoConfig[]
   precos        ProtecaoPreco[]
+  locacoes      LocacaoProtecao[]
 
   @@map("protecoes")
 }
@@ -532,6 +659,7 @@ model Adicional {
   valor              Decimal               @db.Decimal(10, 2)
   valorMaximoLocacao Decimal?              @map("valor_maximo_locacao") @db.Decimal(10, 2)
   ativo              Boolean               @default(true)
+  locacoes           LocacaoAdicional[]
   createdAt          DateTime              @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime              @updatedAt @map("updated_at") @db.DateTime(0)
 
@@ -583,6 +711,7 @@ model Promocao {
   convenio             Convenio?            @relation(fields: [convenioId], references: [id], onDelete: Restrict)
   usos                 UsoPromocao[]
   locacoesPreco        LocacaoPreco[]
+  locacoes             Locacao[]            @relation("LocacaoPromocao")
   createdAt            DateTime             @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt            DateTime             @updatedAt @map("updated_at") @db.DateTime(0)
 
@@ -593,16 +722,16 @@ model Promocao {
 model UsoPromocao {
   id               Int      @id @default(autoincrement())
   promocaoId       Int      @map("promocao_id")
-  usuarioId        Int      @map("usuario_id")
+  clienteId        Int      @map("cliente_id")
   locacaoId        Int      @unique @map("locacao_id")
   descontoAplicado Decimal  @map("desconto_aplicado") @db.Decimal(12, 2)
   promocao         Promocao @relation(fields: [promocaoId], references: [id], onDelete: Restrict)
-  usuario          Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  cliente          Cliente  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
   locacao          Locacao  @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
   usadoEm          DateTime @default(now()) @map("usado_em") @db.DateTime(0)
 
-  @@unique([promocaoId, usuarioId, locacaoId])
-  @@index([promocaoId, usuarioId])
+  @@unique([promocaoId, clienteId, locacaoId])
+  @@index([promocaoId, clienteId])
   @@map("usos_promocao")
 }
 
@@ -652,4 +781,96 @@ model LocacaoPreco {
   createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
 
   @@map("locacao_precos")
+}
+
+model LocacaoMotorista {
+  id        Int      @id @default(autoincrement())
+  locacaoId Int      @map("locacao_id")
+  clienteId Int      @map("cliente_id")
+  principal Boolean  @default(false)
+  locacao   Locacao  @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  cliente   Cliente  @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([locacaoId, clienteId])
+  @@index([clienteId])
+  @@map("locacao_motoristas")
+}
+
+model LocacaoAdicional {
+  id            Int       @id @default(autoincrement())
+  locacaoId     Int       @map("locacao_id")
+  adicionalId   Int       @map("adicional_id")
+  quantidade    Int       @db.UnsignedSmallInt
+  valorUnitario Decimal   @map("valor_unitario") @db.Decimal(10, 2)
+  valorTotal    Decimal   @map("valor_total") @db.Decimal(10, 2)
+  locacao       Locacao   @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  adicional     Adicional @relation(fields: [adicionalId], references: [id], onDelete: Restrict)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([locacaoId, adicionalId])
+  @@map("locacao_adicionais")
+}
+
+model LocacaoProtecao {
+  id          Int      @id @default(autoincrement())
+  locacaoId   Int      @map("locacao_id")
+  protecaoId  Int      @map("protecao_id")
+  valorDiaria Decimal  @map("valor_diaria") @db.Decimal(10, 2)
+  valorTotal  Decimal  @map("valor_total") @db.Decimal(10, 2)
+  locacao     Locacao  @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  protecao    Protecao @relation(fields: [protecaoId], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([locacaoId, protecaoId])
+  @@map("locacao_protecoes")
+}
+
+model LocacaoCobrancaExtra {
+  id        Int                      @id @default(autoincrement())
+  locacaoId Int                      @map("locacao_id")
+  tipo      TipoCobrancaExtraLocacao
+  descricao String                   @db.VarChar(120)
+  valor     Decimal                  @db.Decimal(10, 2)
+  locacao   Locacao                  @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  createdAt DateTime                 @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime                 @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([locacaoId, tipo])
+  @@map("locacao_cobrancas_extras")
+}
+
+model LocacaoPagamento {
+  id        Int                    @id @default(autoincrement())
+  locacaoId Int                    @map("locacao_id")
+  tipo      TipoPagamentoLocacao
+  valor     Decimal                @db.Decimal(10, 2)
+  status    StatusPagamentoLocacao @default(pendente)
+  gatewayId String?                @map("gateway_id") @db.VarChar(80)
+  pagoEm    DateTime?              @map("pago_em") @db.DateTime(3)
+  locacao   Locacao                @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  createdAt DateTime               @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime               @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([locacaoId, tipo, status])
+  @@map("locacao_pagamentos")
+}
+
+model LocacaoStatusHistorico {
+  id             Int      @id @default(autoincrement())
+  locacaoId      Int      @map("locacao_id")
+  statusAnterior String   @map("status_anterior") @db.VarChar(20)
+  statusNovo     String   @map("status_novo") @db.VarChar(20)
+  usuarioId      Int      @map("usuario_id")
+  alteradoEm     DateTime @default(now()) @map("alterado_em") @db.DateTime(3)
+  locacao        Locacao  @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  usuario        Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  createdAt      DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([locacaoId, alteradoEm])
+  @@map("locacao_status_historico")
 }

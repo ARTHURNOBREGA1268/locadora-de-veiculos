@@ -14,6 +14,7 @@ function fake({ locacaoAtiva = null, status = "disponivel" } = {}) {
         findFirst: async () => estado.locacaoAtiva,
       },
       veiculo: {
+        findUnique: async () => ({ id: 7, status: estado.status }),
         updateMany: async ({ where, data }) => {
           if (
             where.id !== 7 ||

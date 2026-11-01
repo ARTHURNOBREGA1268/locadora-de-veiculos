@@ -2,13 +2,14 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const AppError = require('../lib/AppError');
+const { normalizarCpf } = require('./cliente.service');
 const { getJwtSecret } = require('../lib/jwtConfig');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const selectPublico = { id: true, nome: true, email: true, papel: true, ativo: true, criadoEm: true };
 
-async function registrar({ nome, email, senha }) {
+async function registrar({ nome, email, senha, cpf }) {
   if (typeof nome !== 'string' || nome.trim().length < 2) {
     throw new AppError('Nome é obrigatório (mínimo 2 caracteres)', 400);
   }
@@ -30,11 +31,22 @@ async function registrar({ nome, email, senha }) {
   }
 
   const senhaHash = await bcrypt.hash(senha, 10);
-
-  return prisma.usuario.create({
-    data: { nome: nome.trim(), email: emailNormalizado, senhaHash },
-    select: selectPublico
-  });
+  const cpfNormalizado = normalizarCpf(cpf);
+  try {
+    return await prisma.$transaction(async tx => {
+      const usuario = await tx.usuario.create({
+        data: { nome: nome.trim(), email: emailNormalizado, senhaHash },
+        select: selectPublico
+      });
+      await tx.cliente.create({
+        data: { nome: nome.trim(), cpf: cpfNormalizado, email: emailNormalizado, usuarioId: usuario.id }
+      });
+      return usuario;
+    });
+  } catch (error) {
+    if (error?.code === 'P2002') throw new AppError('E-mail ou CPF já cadastrado', 409);
+    throw error;
+  }
 }
 
 async function login({ email, senha }) {

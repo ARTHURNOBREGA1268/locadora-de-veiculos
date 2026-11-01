@@ -1,10 +1,14 @@
 const { Router } = require("express");
 const controller = require("../controllers/locacao.controller");
 const autenticar = require("../middlewares/auth.middleware");
+const exigirAdmin = require("../middlewares/admin.middleware");
 const router = Router();
 router.use(autenticar);
 router.post("/", controller.criar);
 router.get("/", controller.listar);
+router.get("/checklist", controller.listarChecklist);
 router.get("/:id", controller.buscar);
+router.post("/:id/cobrancas-extras", exigirAdmin, controller.registrarCobrancaExtra);
+router.patch("/:id/contrato-assinado", exigirAdmin, controller.marcarContratoAssinado);
 router.patch("/:id/:acao", controller.transicao);
 module.exports = router;

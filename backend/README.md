@@ -101,7 +101,14 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | POST | /locacoes | sim | Registra locação reservada |
 | GET | /locacoes | sim | Lista as locações do usuário |
 | GET | /locacoes/:id | sim | Consulta uma locação do usuário |
+| GET | /locacoes/checklist | sim | Lista itens ativos para vistoria |
 | PATCH | /locacoes/:id/retirar, /iniciar, /devolver, /finalizar, /cancelar | sim, proprietário | Executa a próxima transição permitida |
+| POST | /locacoes/:id/cobrancas-extras | sim, ADMIN | Registra ocorrência até a finalização como saldo pendente |
+| PATCH | /locacoes/:id/contrato-assinado | sim, ADMIN | Registra uma única vez a confirmação da assinatura física do snapshot |
+| GET | /clientes/me | sim | Consulta o cadastro Cliente ligado à conta autenticada |
+| GET/POST | /clientes | sim, ADMIN | Lista e cadastra clientes independentes ou vinculados a USER |
+| GET | /clientes/:id | sim, ADMIN | Consulta cadastro de cliente |
+| PATCH | /clientes/:id | sim, ADMIN | Edita/inativa cadastro sem exclusão física |
 | GET/PUT | /configuracoes/locacao | sim, ADMIN | Consulta/atualiza configuração global, catálogos e regras |
 | POST | /precificacao/cotacao | sim | Retorna uma cotação detalhada; não reserva nem bloqueia o veículo |
 | GET | /precificacao/opcoes/:veiculoId | sim | Opções ativas de adicionais/proteções/convênios e caução informativa |
@@ -121,9 +128,13 @@ Rotas protegidas exigem o header `Authorization: Bearer <token>`. A cada requisi
 
 ## Configuração global de locação e estados
 
-`GET /configuracoes/locacao` e `PUT /configuracoes/locacao` são ADMIN-only. O PUT exige o objeto completo retornado pelo GET, incluindo arrays relacionais; campos desconhecidos, limites fora dos tipos SQL, enums, booleanos e IDs de catálogos são validados antes da transação. O catálogo de proteções permite criar/editar opções e ativá-las/desativá-las; os vínculos e seleções são persistidos. Itens de checklist novos são criados sem ID local, os existentes são atualizados e os removidos na tela são excluídos do cadastro. Franquias/cauções são mantidas por categoria, inclusive categorias adicionadas posteriormente.
+`GET /configuracoes/locacao` e `PUT /configuracoes/locacao` são ADMIN-only. O PUT exige o objeto completo retornado pelo GET, incluindo arrays relacionais; campos desconhecidos, limites fora dos tipos SQL, enums, booleanos e IDs de catálogos são validados antes da transação. O catálogo de proteções permite criar/editar opções e ativá-las/desativá-las; os vínculos e seleções são persistidos. Itens de checklist novos são criados sem ID local, os existentes são atualizados e os removidos da tela são inativados, preservando o registro e as respostas já congeladas em vistorias. Franquias/cauções são mantidas por categoria, inclusive categorias adicionadas posteriormente.
 
-A migration converte `ATIVA` para `reservada` quando `dataInicio` é futura e `em_andamento` nos demais casos; `FINALIZADA` vira `finalizada`, preservando datas existentes. Reservas novas começam `reservada` e mantêm o veículo como `reservado`; a ação de retirada move a locação a `retirada` e o veículo a `alugado`, seguindo para `em_andamento`, devolvida e finalizada. O status não é editável livremente. Cancelamento só é aceito antes da retirada e retorna `multaCancelamentoCalculada` como estimativa mostrada na interface; não há cobrança nem processamento de pagamento. A antecedência e o intervalo mínimo/máximo são aplicados ao criar locações. Idade, tempo de CNH, cartão e documentos são armazenados como política, mas ainda não são verificados, pois Usuario não tem dados comprováveis. As opções de filial, quilometragem, combustível, motorista, proteções, caução, franquia e checklist são persistidas, mas ainda não alteram o contrato ou a cobrança; não há fluxo de pagamento/assinatura/vistoria executável. Horários padrão são configuráveis, mas o horário efetivo solicitado continua vindo no payload da locação.
+Migration incremental associa reservas legadas a um cadastro `Cliente` separado, preserva IDs, datas, valores e status e não inventa CPF. Categoria congelada, origem e filiais não existiam no registro antigo: esses campos permanecem `NULL` no histórico; novas locações precisam informar categoria e filiais válidas. A relação opcional `Cliente.usuarioId` vincula a conta e o cadastro.
+
+O vínculo entre `Cliente` e conta só pode ser alterado enquanto não houver locações para esse cadastro; depois ele é imutável, para impedir que a mudança transfira a outra conta o acesso às locações históricas.
+
+Reservas novas começam `reservada` e mantêm o veículo como `reservado`; retirada, início, devolução e finalização seguem a máquina automática e não aceitam edição manual livre. USER só lista/opera as próprias locações; ADMIN mantém a lista global. Intervalo e antecedência, veículo disponível no período, filial, entrega, km, combustível, motoristas, proteções e snapshot de preço são validados pelo backend. `GET /locacoes/checklist` retorna os itens ativos; respostas obrigatórias são validadas e congeladas como JSON na vistoria. Ocorrências adicionais podem ser registradas por ADMIN após a devolução e antes da finalização; criam saldo pendente e entram no valor final, sem captura de pagamento. A assinatura física pode ser registrada uma única vez por ADMIN, com data, sobre o texto de contrato congelado; não há assinatura digital. Idade, tempo de CNH e documentos são armazenados como política, mas ainda não podem ser verificados até que esses dados comprováveis integrem o cadastro do Cliente. Horários padrão são configuráveis, mas a data/hora efetiva continua sendo informada na reserva/vistoria.
 
 ## Motor de precificação
 
@@ -133,7 +144,7 @@ O ADMIN configura tarifas por categoria e vigência e pode aplicar pisos. A cota
 
 Ao criar uma locação, o serviço recalcula a cotação dentro da transação e salva `Locacao.valorTotal`, a discriminação, as regras aplicadas e a caução vigente em `LocacaoPreco`; a caução é um dado de garantia separado, não compõe o total. O eventual uso de cupom é contabilizado na mesma transação. Consultas históricas leem o snapshot, não a tarifa atual. Tarifas, regras, adicionais, proteções, cupons e níveis são preservados por inativação; alterações administrativas deixam registros de auditoria. `GET /precificacao/opcoes/:veiculoId` retorna apenas taxas necessárias à apresentação de serviços opcionais, não a configuração interna de custos.
 
-Não há integração com gateway de pagamento: forma de pagamento e parcelamento afetam a estimativa das taxas configuradas, mas não cobram, autorizam ou capturam pagamentos. O custo de km excedente é configurado, porém só pode ser calculado quando a quilometragem efetiva da locação estiver registrada; não é estimado na reserva.
+Não há integração com gateway de pagamento: forma de pagamento e parcelamento afetam a estimativa das taxas configuradas, mas não cobram, autorizam ou capturam pagamentos. Caução e saldos começam pendentes; ações operacionais não simulam liquidação. Km excedente, atraso e combustível são calculados após registrar a vistoria de devolução; multas de trânsito exigem ocorrência registrada antes de aplicar a taxa administrativa.
 
 ## Testes
 

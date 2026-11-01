@@ -1,0 +1,12 @@
+{
+  "routes": [
+    { "path": "/login", "title": "Entrar" },
+    { "path": "/cadastro", "title": "Criar conta" },
+    { "path": "/locacoes", "title": "Locações" },
+    { "path": "/veiculos", "title": "Veículos" },
+    { "path": "/clientes", "title": "Clientes" },
+    { "path": "/usuarios", "title": "Usuários" },
+    { "path": "/precificacao", "title": "Precificação" },
+    { "path": "/configuracoes/locacao", "title": "Configurações de locação" }
+  ]
+}

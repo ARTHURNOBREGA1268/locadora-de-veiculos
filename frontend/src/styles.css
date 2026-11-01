@@ -1322,3 +1322,56 @@ select {
 .cotacao-detalhes .cotacao-linhas {
   margin-top: 12px;
 }
+
+/* Gestão de clientes e tabela operacional de locações */
+.painel-locacoes, .painel-clientes { display: grid; gap: 18px; }
+.locacoes-filtros, .clientes-filtros { display: flex; align-items: end; gap: 14px; flex-wrap: wrap; }
+.locacoes-filtros label, .clientes-filtros label { flex: 1 1 220px; }
+.tabela-locacoes-scroll, .tabela-clientes-scroll { width: 100%; overflow-x: auto; border: 1px solid var(--linha); border-radius: 8px; }
+.tabela-locacoes, .tabela-clientes { width: 100%; min-width: 1120px; border-collapse: collapse; text-align: left; }
+.tabela-clientes { min-width: 760px; }
+.tabela-locacoes th, .tabela-clientes th { position: sticky; top: 0; background: #f4f7f8; color: var(--apoio); font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; z-index: 1; }
+.tabela-locacoes th, .tabela-locacoes td, .tabela-clientes th, .tabela-clientes td { padding: 12px; border-bottom: 1px solid var(--linha); vertical-align: top; }
+.tabela-locacoes tbody tr:last-child td, .tabela-clientes tbody tr:last-child td { border-bottom: 0; }
+.tabela-locacoes td small { display: block; color: var(--apoio); margin-top: 3px; }
+.locacao-acoes, .clientes-acoes { display: flex; flex-wrap: wrap; gap: 6px; }
+.locacao-acoes .botao, .clientes-acoes .botao { padding: 6px 9px; font-size: .85rem; }
+.locacao-expansao { margin-top: 8px; min-width: 110px; }
+.locacao-expansao summary { cursor: pointer; color: var(--petroleo); font-weight: 600; }
+.locacao-detalhes-grade { margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; width: min(840px, 75vw); }
+.locacao-detalhe { display: grid; gap: 4px; padding: 10px; border-radius: 6px; background: #f4f7f8; overflow-wrap: anywhere; font-size: .9rem; }
+.locacao-detalhe strong { color: var(--petroleo-escuro); }
+.locacao-detalhe pre { white-space: pre-wrap; max-height: 240px; overflow: auto; font: inherit; }
+.locacoes-historico-titulo { display: grid; gap: 3px; }
+.clientes-form-titulo { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.clientes-feedback, .clientes-erro { padding: 10px 14px; border-radius: 6px; }
+.clientes-feedback { background: var(--livre-fundo); color: #14502f; }
+.clientes-erro { background: var(--ocupado-fundo); color: #6d2616; }
+.selo-ativo { background: var(--livre-fundo); color: var(--livre); }
+.selo-inativo { background: #eceff1; color: #52616a; }
+.botao-perigo { background: #fff; border-color: var(--ocupado); color: var(--ocupado); }
+.botao-perigo:hover:not(:disabled) { background: var(--ocupado-fundo); }
+@media (max-width: 720px) {
+  .locacoes-filtros, .clientes-filtros { align-items: stretch; flex-direction: column; }
+  .locacoes-filtros label, .clientes-filtros label { flex: auto; }
+  .tabela-locacoes, .tabela-clientes { min-width: 940px; }
+  .locacao-detalhes-grade { width: min(78vw, 600px); grid-template-columns: 1fr; }
+}
+
+.locacao-dialogo { width: min(560px, calc(100vw - 32px)); max-width: 100%; border: 1px solid var(--linha); border-radius: 12px; padding: 24px; color: var(--tinta); box-shadow: 0 18px 60px #102a3540; }
+.locacao-dialogo::backdrop { background: #102a35a8; }
+.locacao-dialogo h2 { margin-bottom: 4px; }
+.locacao-dialogo textarea { width: 100%; min-height: 100px; resize: vertical; font: inherit; padding: 10px 12px; border: 1px solid #b9c3c8; border-radius: 6px; }
+.locacao-dialogo-acoes { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+
+.locacao-checklist { display: grid; gap: 12px; margin: 8px 0; padding: 14px; border: 1px solid var(--linha); border-radius: 8px; }
+.locacao-checklist legend { padding: 0 6px; color: var(--petroleo-escuro); font-weight: 700; }
+.locacao-checklist label { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(150px, 220px); align-items: center; gap: 12px; }
+.locacao-checklist small { color: var(--apoio); }
+@media (max-width: 600px) { .locacao-checklist label { grid-template-columns: 1fr; gap: 6px; } }
+
+.locacao-cobranca-form { margin-top: 8px; }
+.locacao-cobranca-form summary { cursor: pointer; color: var(--petroleo); font-weight: 600; }
+.locacao-cobranca-form .formulario { max-width: 460px; margin-top: 12px; }
+.locacao-switch { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 8px; margin-top: 8px; }
+.locacao-switch input[type="checkbox"] { width: auto; accent-color: var(--petroleo); }

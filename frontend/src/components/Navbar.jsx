@@ -17,6 +17,7 @@ export default function Navbar() {
         <nav className="menu" aria-label="Principal">
           <NavLink to="/locacoes">Locações</NavLink>
           <NavLink to="/veiculos">Veículos</NavLink>
+          {usuario.papel === "ADMIN" && <NavLink to="/clientes">Clientes</NavLink>}
           {usuario.papel === "ADMIN" && (
             <NavLink to="/usuarios">Usuários</NavLink>
           )}

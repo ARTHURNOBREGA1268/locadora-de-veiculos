@@ -15,6 +15,7 @@ const ENUMS = {
 };
 const PUBLIC_FIELDS = [
   "id",
+  "placa",
   "marca",
   "modelo",
   "versao",
@@ -361,13 +362,15 @@ async function editar(id, body) {
     include: vehicleInclude,
   });
 }
-async function listar({ disponivel, status }) {
+async function listar({ disponivel, status, userRole }) {
   const where = {};
-  if (status !== undefined) {
+  if (userRole !== "ADMIN") {
+    where.status = { in: ["disponivel", "alugado", "reservado"] };
+  } else if (status !== undefined) {
     if (!STATUSES.includes(status)) fail("status inválido");
     where.status = status;
   }
-  if (disponivel !== undefined) {
+  if (userRole === "ADMIN" && disponivel !== undefined) {
     if (!["true", "false"].includes(disponivel))
       fail("Filtro disponivel deve ser true ou false");
     where.status = disponivel === "true" ? "disponivel" : { not: "disponivel" };

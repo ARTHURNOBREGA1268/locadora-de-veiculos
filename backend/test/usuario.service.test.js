@@ -25,18 +25,14 @@ function transacaoFalsa(t, tx) {
 }
 
 test('cria conta USER por padrão, normaliza e-mail e nunca retorna o hash da senha', async t => {
-  let argumentos;
-  substituir(prisma.usuario, 'create', async args => {
-    argumentos = args;
-    return {
-      id: 20,
-      nome: args.data.nome,
-      email: args.data.email,
-      papel: args.data.papel,
-      ativo: true,
-      criadoEm: new Date('2026-01-01')
-    };
-  }, t);
+  let argumentos, clienteArgs;
+  substituir(prisma, '$transaction', async callback => callback({
+    usuario: { create: async args => {
+      argumentos = args;
+      return { id: 20, nome: args.data.nome, email: args.data.email, papel: args.data.papel, ativo: true, criadoEm: new Date('2026-01-01') };
+    } },
+    cliente: { create: async args => { clienteArgs = args; return { id: 30, ...args.data }; } }
+  }), t);
 
   const criado = await usuarioService.criar({
     nome: '  Pessoa Nova  ',
@@ -51,6 +47,8 @@ test('cria conta USER por padrão, normaliza e-mail e nunca retorna o hash da se
   assert.equal(Object.hasOwn(criado, 'senhaHash'), false);
   assert.equal(await bcrypt.compare('senha-segura-8', argumentos.data.senhaHash), true);
   assert.equal(argumentos.select.senhaHash, undefined);
+  assert.equal(clienteArgs.data.usuarioId, 20);
+  assert.equal(clienteArgs.data.nome, 'Pessoa Nova');
 });
 
 test('rejeita corpo incompleto e papel desconhecido antes de gravar', async t => {
