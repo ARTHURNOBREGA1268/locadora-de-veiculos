@@ -16,9 +16,9 @@ ALTER TABLE `usos_promocao` DROP FOREIGN KEY `usos_promocao_locacao_id_fkey`;
 
 ALTER TABLE `locacao_precos` DROP FOREIGN KEY `locacao_precos_locacao_id_fkey`;
 
-DROP INDEX `usos_promocao_promocao_id_usuario_id_idx` ON `usos_promocao`;
-
 DROP INDEX `usos_promocao_promocao_id_usuario_id_locacao_id_key` ON `usos_promocao`;
+
+DROP INDEX `usos_promocao_promocao_id_usuario_id_idx` ON `usos_promocao`;
 
 CREATE TABLE `clientes` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
