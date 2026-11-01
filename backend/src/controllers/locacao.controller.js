@@ -1,6 +1,17 @@
 const service = require("../services/locacao.service");
 async function criar(req, res) {
-  const { veiculoId, dataInicio, dataPrevistaDevolucao } = req.body || {};
+  const {
+    veiculoId,
+    dataInicio,
+    dataPrevistaDevolucao,
+    adicionais,
+    protecoes,
+    cupom,
+    convenioId,
+    taxas,
+    formaPagamento,
+    parcelas,
+  } = req.body || {};
   res
     .status(201)
     .json(
@@ -9,6 +20,13 @@ async function criar(req, res) {
         veiculoId,
         dataInicio,
         dataPrevistaDevolucao,
+        adicionais,
+        protecoes,
+        cupom,
+        convenioId,
+        taxas,
+        formaPagamento,
+        parcelas,
       }),
     );
 }

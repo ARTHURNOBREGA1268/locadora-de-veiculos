@@ -12,7 +12,9 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 - Catálogo administrativo de veículos: cadastro/edição de identificação, características, situação operacional, dados financeiros/documentais, categoria, filial e opcionais
 - Listagem pública com campos seguros e filtros por status; detalhe completo e histórico somente para ADMIN
 - Histórico administrativo por veículo: manutenções, sinistros/avarias, multas e vistorias; vínculos de locação são validados
-- Registro de locação com cálculo do valor no backend (qualquer fração de 24 horas conta como diária completa)
+- Precificação API-first: custos operacionais, ocupação, margem, tarifas por categoria/vigência, regras dinâmicas, adicionais, proteções, cupons, fidelidade, impostos e taxas
+- Cotação discriminada no backend e congelamento do preço no mesmo commit transacional da reserva; futuras alterações de preço não mudam o histórico
+- Registro de locação com recálculo autoritativo no backend (qualquer fração de 24 horas conta como diária completa)
 - Listagem das locações do usuário autenticado, com os dados do veículo
 - Fluxo explícito e transacional: reservada → retirada → em_andamento → devolvida → finalizada, ou reservada → cancelada; liberação do veículo na devolução/cancelamento
 - Acesso restrito ao dono da locação
@@ -101,6 +103,19 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | GET | /locacoes/:id | sim | Consulta uma locação do usuário |
 | PATCH | /locacoes/:id/retirar, /iniciar, /devolver, /finalizar, /cancelar | sim, proprietário | Executa a próxima transição permitida |
 | GET/PUT | /configuracoes/locacao | sim, ADMIN | Consulta/atualiza configuração global, catálogos e regras |
+| POST | /precificacao/cotacao | sim | Retorna uma cotação detalhada; não reserva nem bloqueia o veículo |
+| GET | /precificacao/opcoes/:veiculoId | sim | Opções ativas de adicionais/proteções/convênios e caução informativa |
+| GET | /precificacao/admin | sim, ADMIN | Parâmetros, custos, tarifas, regras, cadastros e histórico de preços |
+| PATCH | /precificacao/configuracao | sim, ADMIN | Atualiza parâmetros gerais e taxas configuráveis |
+| PUT | /precificacao/custos/:veiculoId | sim, ADMIN | Define custos operacionais para veículo |
+| POST/PATCH | /precificacao/tarifas, /precificacao/tarifas/:id | sim, ADMIN | Mantém tarifas diárias/semanais/mensais por categoria e vigência |
+| POST/PATCH | /precificacao/regras, /precificacao/regras/:id | sim, ADMIN | Mantém ajustes de sazonalidade, semana, antecedência, ocupação e duração |
+| POST/PATCH | /precificacao/adicionais, /precificacao/adicionais/:id | sim, ADMIN | Mantém itens opcionais por diária ou locação |
+| POST/PATCH | /precificacao/protecoes, /precificacao/protecoes/:id | sim, ADMIN | Mantém preços de proteções por categoria ou gerais |
+| POST/PATCH | /precificacao/promocoes, /precificacao/promocoes/:id | sim, ADMIN | Mantém cupons e limites de uso |
+| POST/PATCH | /precificacao/fidelidade, /precificacao/fidelidade/:id | sim, ADMIN | Mantém níveis/descontos calculados por locações finalizadas |
+| PATCH | /precificacao/pisos/:categoriaId | sim, ADMIN | Define piso mínimo por categoria |
+| GET | /precificacao/historico | sim, ADMIN | Consulta auditoria de alterações de preço |
 
 Rotas protegidas exigem o header `Authorization: Bearer <token>`. A cada requisição protegida, status, papel e versão de sessão são consultados no banco. Contas inativas são bloqueadas imediatamente; redefinir senha ou inativar incrementa a versão e revoga tokens existentes, inclusive se a conta for reativada depois. O papel de autorização vem do banco, nunca do cliente/JWT. Não há exclusão física: inativar preserva histórico. Administradores não podem inativar/rebaixar a si mesmos nem remover o último ADMIN ativo; conflitos retornam 409. Cadastro público cria sempre USER ativo e ignora papel/status enviados pelo cliente.
 
@@ -109,6 +124,16 @@ Rotas protegidas exigem o header `Authorization: Bearer <token>`. A cada requisi
 `GET /configuracoes/locacao` e `PUT /configuracoes/locacao` são ADMIN-only. O PUT exige o objeto completo retornado pelo GET, incluindo arrays relacionais; campos desconhecidos, limites fora dos tipos SQL, enums, booleanos e IDs de catálogos são validados antes da transação. O catálogo de proteções permite criar/editar opções e ativá-las/desativá-las; os vínculos e seleções são persistidos. Itens de checklist novos são criados sem ID local, os existentes são atualizados e os removidos na tela são excluídos do cadastro. Franquias/cauções são mantidas por categoria, inclusive categorias adicionadas posteriormente.
 
 A migration converte `ATIVA` para `reservada` quando `dataInicio` é futura e `em_andamento` nos demais casos; `FINALIZADA` vira `finalizada`, preservando datas existentes. Reservas novas começam `reservada` e mantêm o veículo como `reservado`; a ação de retirada move a locação a `retirada` e o veículo a `alugado`, seguindo para `em_andamento`, devolvida e finalizada. O status não é editável livremente. Cancelamento só é aceito antes da retirada e retorna `multaCancelamentoCalculada` como estimativa mostrada na interface; não há cobrança nem processamento de pagamento. A antecedência e o intervalo mínimo/máximo são aplicados ao criar locações. Idade, tempo de CNH, cartão e documentos são armazenados como política, mas ainda não são verificados, pois Usuario não tem dados comprováveis. As opções de filial, quilometragem, combustível, motorista, proteções, caução, franquia e checklist são persistidas, mas ainda não alteram o contrato ou a cobrança; não há fluxo de pagamento/assinatura/vistoria executável. Horários padrão são configuráveis, mas o horário efetivo solicitado continua vindo no payload da locação.
+
+## Motor de precificação
+
+A página `/precificacao` é restrita a ADMIN. Custos ausentes permanecem incompletos (não são substituídos por zero): depreciação usa compra, revenda e vida útil do veículo; os demais dados incluem capital, tributos anuais, manutenção por km e parâmetros gerais de ocupação, margem, estrutura, quilometragem, limpeza e comissão. A tela mostra a diária mínima recomendada calculada pela API.
+
+O ADMIN configura tarifas por categoria e vigência e pode aplicar pisos. A cotação calcula diárias com `ceil(duração / 24h)`, escolhe entre diária e pacotes semanais/mensais, aplica regras elegíveis por prioridade, adiciona serviços/proteções, aplica cupons e descontos de fidelidade apenas sobre diárias e limita o desconto máximo para preservar o custo mínimo e o piso; a resposta sinaliza quando esse limite reduz um desconto. Em seguida calcula ISS/taxas de pagamento. Caução é exibida separadamente, nunca somada ao preço. O cliente envia escolhas e quantidades, nunca um total confiável.
+
+Ao criar uma locação, o serviço recalcula a cotação dentro da transação e salva `Locacao.valorTotal`, a discriminação, as regras aplicadas e a caução vigente em `LocacaoPreco`; a caução é um dado de garantia separado, não compõe o total. O eventual uso de cupom é contabilizado na mesma transação. Consultas históricas leem o snapshot, não a tarifa atual. Tarifas, regras, adicionais, proteções, cupons e níveis são preservados por inativação; alterações administrativas deixam registros de auditoria. `GET /precificacao/opcoes/:veiculoId` retorna apenas taxas necessárias à apresentação de serviços opcionais, não a configuração interna de custos.
+
+Não há integração com gateway de pagamento: forma de pagamento e parcelamento afetam a estimativa das taxas configuradas, mas não cobram, autorizam ou capturam pagamentos. O custo de km excedente é configurado, porém só pode ser calculado quando a quilometragem efetiva da locação estiver registrada; não é estimado na reserva.
 
 ## Testes
 
@@ -119,9 +144,14 @@ Na pasta `backend/`, execute `npm test` para rodar os testes unitários/HTTP com
 POST /auth/login
 { "email": "demo@locadora.com", "senha": "123456" }
 
+POST /precificacao/cotacao
+{ "veiculoId": 1, "dataInicio": "2026-11-10T10:00:00.000Z", "dataPrevistaDevolucao": "2026-11-12T10:00:00.000Z", "adicionais": [], "protecoes": [], "formaPagamento": "pix" }
+
 POST /locacoes
 { "veiculoId": 1, "dataInicio": "2026-11-10T10:00:00.000Z", "dataPrevistaDevolucao": "2026-11-12T10:00:00.000Z" }
 ```
+
+`POST /locacoes` exige uma tarifa vigente e recalcula o preço na API. O resultado de `POST /precificacao/cotacao` é uma prévia; não envie `valorTotal`, pois o servidor ignora totais fornecidos pelo cliente.
 
 ### Códigos HTTP
 | Código | Uso |
@@ -139,7 +169,7 @@ POST /locacoes
 prisma/       schema.prisma, migrations/, seed.js
 src/routes/       mapeamento dos endpoints e middlewares
 src/controllers/  entrada e resposta HTTP
-src/services/     validações e regras de negócio, acesso ao Prisma
+src/services/     validações e regras de negócio, acesso ao Prisma (inclui cálculo em `precificacao.calculo.js`)
 src/middlewares/  autenticação JWT e tratamento de erros
 src/lib/          cliente Prisma e AppError
 src/integrations/ adaptadores de integrações externas usados somente pelo backend (nenhum implementado atualmente)
@@ -149,7 +179,7 @@ src/integrations/ adaptadores de integrações externas usados somente pelo back
 - **Separação de responsabilidades:** as rotas só mapeiam endpoints, os controllers tratam a requisição e a resposta, e os services concentram as regras de negócio.
 - **Identificação do usuário:** o `usuarioId` das locações vem sempre do token (`req.userId`), nunca do corpo da requisição.
 - **Senhas:** guardadas com `bcrypt` (10 rounds). O hash nunca é retornado pela API, porque os `select` do service de autenticação omitem o campo.
-- **Cálculo do valor:** feito no service de locações. Número de diárias é `ceil(duração / 24h)`, multiplicado pela diária do veículo.
+- **Cálculo do valor:** realizado com Decimal no motor de precificação; o service de locações recalcula na confirmação e grava os componentes em `LocacaoPreco` na mesma transação.
 - **Concorrência:** a reserva consulta locações abertas e usa `updateMany` condicionado a `status: 'disponivel'` dentro de `prisma.$transaction`; a segunda de duas reservas simultâneas recebe 409. As transições da locação também condicionam a atualização ao estado anterior esperado, e a retirada/devolução/cancelamento atualiza a frota condicionalmente.
 - **Histórico:** locações e veículos não são excluídos fisicamente; veículos são inativados, e as FKs de histórico impedem remoção acidental dos registros.
 - **Erros:** `AppError` carrega o código HTTP, e o middleware de erro devolve `{ "erro": "mensagem" }`.
@@ -160,4 +190,9 @@ src/integrations/ adaptadores de integrações externas usados somente pelo back
 - `CategoriaVeiculo` 1:N `Veiculo`; `Filial` 1:N `Veiculo`
 - `Veiculo` N:N `OpcionalVeiculo` pela tabela `veiculo_opcionais`
 - `Veiculo` 1:N `Manutencao`, `SinistroAvaria`, `Multa` e `Vistoria`
+- `CategoriaVeiculo` 1:N `TarifaBase`, `RegraPreco`, `PrecoPisoCategoria`, `ProtecaoPreco` e `Promocao`
+- `Veiculo` 1:1 `CustoPrecificacaoVeiculo`; `ConfiguracaoPrecificacao` mantém ocupação/margem e taxas globais
+- `Locacao` 1:1 `LocacaoPreco`, com snapshot imutável; `Promocao` 1:N `UsoPromocao` e cada uso aponta a uma locação/usuário
+- `Protecao` 1:N `ProtecaoPreco`; `Convenio` 1:N `Promocao`
+- `LocacaoPreco.valorCaucao` preserva a garantia cotada na confirmação, separada de `valorTotal`
 - E-mail e placa são únicos. `Locacao.status` usa `reservada`, `retirada`, `em_andamento`, `devolvida`, `finalizada` ou `cancelada`.

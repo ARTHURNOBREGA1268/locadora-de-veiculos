@@ -21,6 +21,9 @@ export default function Navbar() {
             <NavLink to="/usuarios">Usuários</NavLink>
           )}
           {usuario.papel === "ADMIN" && (
+            <NavLink to="/precificacao">Precificação</NavLink>
+          )}
+          {usuario.papel === "ADMIN" && (
             <NavLink to="/configuracoes/locacao">Configurações</NavLink>
           )}
         </nav>

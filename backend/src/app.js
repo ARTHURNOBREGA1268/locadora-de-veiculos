@@ -7,6 +7,7 @@ const veiculoRoutes = require('./routes/veiculo.routes');
 const locacaoRoutes = require('./routes/locacao.routes');
 const usuarioRoutes = require('./routes/usuario.routes');
 const configuracaoRoutes = require('./routes/configuracao.routes');
+const precificacaoRoutes = require('./routes/precificacao.routes');
 const { naoEncontrado, tratarErros } = require('./middlewares/error.middleware');
 const app = express();
 const origensPermitidas = (process.env.CORS_ORIGIN || 'http://localhost:5173')
@@ -29,6 +30,7 @@ app.use('/veiculos', veiculoRoutes);
 app.use('/locacoes', locacaoRoutes);
 app.use('/usuarios', usuarioRoutes);
 app.use('/configuracoes', configuracaoRoutes);
+app.use('/precificacao', precificacaoRoutes);
 
 app.use(naoEncontrado);
 app.use(tratarErros);

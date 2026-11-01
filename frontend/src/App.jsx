@@ -7,6 +7,7 @@ import Veiculos from "./pages/Veiculos";
 import Locacoes from "./pages/Locacoes";
 import Usuarios from "./pages/Usuarios";
 import ConfiguracoesLocacao from "./pages/ConfiguracoesLocacao";
+import Precificacao from "./pages/Precificacao";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
       <Route element={<ProtectedRoute adminOnly />}>
         <Route element={<Layout />}>
           <Route path="/usuarios" element={<Usuarios />} />
+          <Route path="/precificacao" element={<Precificacao />} />
           <Route
             path="/configuracoes/locacao"
             element={<ConfiguracoesLocacao />}

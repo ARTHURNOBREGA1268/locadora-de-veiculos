@@ -1,6 +1,7 @@
 const prisma = require("../lib/prisma");
 const AppError = require("../lib/AppError");
 const { converterData } = require("../lib/isoDateTime");
+const precificacao = require("./precificacao.service");
 const DIA = 86400000;
 function calcularValorTotal(diaria, inicio, fim) {
   return (
@@ -37,6 +38,13 @@ async function criar({
   veiculoId,
   dataInicio,
   dataPrevistaDevolucao,
+  adicionais,
+  protecoes,
+  cupom,
+  convenioId,
+  taxas,
+  formaPagamento,
+  parcelas,
 }) {
   const vid = Number(veiculoId);
   if (!Number.isInteger(vid) || vid <= 0)
@@ -58,30 +66,42 @@ async function criar({
     throw new AppError("Antecedência máxima excedida", 400);
   if (dias < c.periodoMinimoDiarias || dias > c.periodoMaximoDiarias)
     throw new AppError("Duração da locação fora dos limites permitidos", 400);
-  const veiculo = await prisma.veiculo.findUnique({ where: { id: vid } });
-  if (!veiculo) throw new AppError("Veículo não encontrado", 404);
-  if (Number(veiculo.valorDiaria) <= 0)
-    throw new AppError("Veículo sem diária precificada", 409);
-  const valorTotal = calcularValorTotal(veiculo.valorDiaria, inicio, fim);
   return prisma.$transaction(async (tx) => {
+    const cotacao = await precificacao.prepararCotacao(tx, usuarioId, {
+      veiculoId: vid,
+      dataInicio: inicio,
+      dataPrevistaDevolucao: fim,
+      adicionais,
+      protecoes,
+      cupom,
+      convenioId,
+      taxas,
+      formaPagamento,
+      parcelas,
+    });
     await reservarVeiculo(tx, vid, inicio);
-    return tx.locacao.create({
+    const locacao = await tx.locacao.create({
       data: {
         usuarioId,
         veiculoId: vid,
         dataInicio: inicio,
         dataPrevistaDevolucao: fim,
-        valorTotal,
+        valorTotal: cotacao.valorTotal,
         status: "reservada",
       },
       include: { veiculo: true },
     });
-  });
+    await precificacao.salvarSnapshot(tx, locacao.id, cotacao, usuarioId);
+    return tx.locacao.findUnique({
+      where: { id: locacao.id },
+      include: { veiculo: true, preco: true },
+    });
+  }, { isolationLevel: "Serializable" });
 }
 async function listarDoUsuario(usuarioId) {
   return prisma.locacao.findMany({
     where: { usuarioId },
-    include: { veiculo: true },
+    include: { veiculo: true, preco: true },
     orderBy: { id: "desc" },
   });
 }
@@ -91,7 +111,7 @@ async function buscarDoUsuario(uid, id) {
     throw new AppError("Id de locação inválido", 400);
   const l = await prisma.locacao.findUnique({
     where: { id: n },
-    include: { veiculo: true },
+    include: { veiculo: true, preco: true },
   });
   if (!l) throw new AppError("Locação não encontrada", 404);
   if (l.usuarioId !== uid)
@@ -151,7 +171,7 @@ async function transicionar(uid, id, acao) {
     }
     const result = await tx.locacao.findUnique({
       where: { id: l.id },
-      include: { veiculo: true },
+      include: { veiculo: true, preco: true },
     });
     return acao === "cancelar"
       ? { ...result, multaCancelamentoCalculada }

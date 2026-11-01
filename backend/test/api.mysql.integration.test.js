@@ -439,6 +439,92 @@ test(
     assert.equal(edicaoVeiculo.dados.versao, "1.8 Hybrid Premium");
     assert.equal(edicaoVeiculo.dados.opcionais.length, 0);
 
+    const precificacaoInicial = await requisitar("/precificacao/admin", { token: token1 });
+    assert.equal(precificacaoInicial.status, 200);
+    const parametrosPrecificacao = await requisitar("/precificacao/configuracao", {
+      metodo: "PATCH",
+      token: token1,
+      corpo: {
+        ocupacaoAlvoPercentual: 100,
+        margemDesejadaPercentual: 0,
+        custoAdministrativoMensal: 0,
+        kmMedioDiario: 0,
+        limpezaPorLocacao: 0,
+        diasMediosLocacao: 1,
+        comissaoPercentual: 0,
+        taxaPagamentoPercentual: 0,
+        issPercentual: 0,
+      },
+    });
+    assert.equal(parametrosPrecificacao.status, 200);
+    const custosVeiculo = await requisitar(
+      `/precificacao/custos/${cadastroVeiculo.dados.id}`,
+      {
+        metodo: "PUT",
+        token: token1,
+        corpo: {
+          custoCapitalMensal: 0,
+          ipvaAnual: 0,
+          seguroAnual: 0,
+          licenciamentoAnual: 0,
+          manutencaoPorKm: 0,
+        },
+      },
+    );
+    assert.equal(custosVeiculo.status, 200);
+    const custoCapitalForaDoDecimal = await requisitar(`/precificacao/custos/${cadastroVeiculo.dados.id}`, {
+      metodo: "PUT", token: token1, corpo: { custoCapitalMensal: 10000000000 },
+    });
+    assert.equal(custoCapitalForaDoDecimal.status, 400);
+    const manutencaoForaDoDecimal = await requisitar(`/precificacao/custos/${cadastroVeiculo.dados.id}`, {
+      metodo: "PUT", token: token1, corpo: { manutencaoPorKm: 1000000 },
+    });
+    assert.equal(manutencaoForaDoDecimal.status, 400);
+    const manutencaoPrecisaoExcedida = await requisitar(`/precificacao/custos/${cadastroVeiculo.dados.id}`, {
+      metodo: "PUT", token: token1, corpo: { manutencaoPorKm: 0.00001 },
+    });
+    assert.equal(manutencaoPrecisaoExcedida.status, 400);
+    const custosNoLimiteSql = await requisitar(`/precificacao/custos/${cadastroVeiculo.dados.id}`, {
+      metodo: "PUT", token: token1, corpo: { custoCapitalMensal: 9999999999.99, manutencaoPorKm: 999999.9999 },
+    });
+    assert.equal(custosNoLimiteSql.status, 200);
+    const custosZerados = await requisitar(`/precificacao/custos/${cadastroVeiculo.dados.id}`, {
+      metodo: "PUT", token: token1, corpo: { custoCapitalMensal: 0, manutencaoPorKm: 0 },
+    });
+    assert.equal(custosZerados.status, 200);
+    const tarifaBase = await requisitar("/precificacao/tarifas", {
+      metodo: "POST",
+      token: token1,
+      corpo: {
+        categoriaId: categoria.id,
+        valorDiaria: 120.55,
+        valorSemanal: null,
+        valorMensal: null,
+        vigenciaInicio: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        vigenciaFim: null,
+        ativo: true,
+      },
+    });
+    assert.equal(tarifaBase.status, 201);
+    const diariaAbaixoDoPiso = await requisitar(`/precificacao/tarifas/${tarifaBase.dados.id}`, {
+      metodo: "PATCH", token: token1, corpo: { valorDiaria: 10 },
+    });
+    assert.equal(diariaAbaixoDoPiso.status, 409);
+    const semanalAbaixoDoPiso = await requisitar(`/precificacao/tarifas/${tarifaBase.dados.id}`, {
+      metodo: "PATCH", token: token1, corpo: { valorSemanal: 90 },
+    });
+    assert.equal(semanalAbaixoDoPiso.status, 409);
+    const recomendacaoPrecificacao = await requisitar("/precificacao/admin", { token: token1 });
+    assert.equal(recomendacaoPrecificacao.status, 200);
+    const veiculoComRecomendacao = recomendacaoPrecificacao.dados.veiculos.find((item) => item.id === cadastroVeiculo.dados.id);
+    assert.equal(veiculoComRecomendacao.recomendacaoCusto.completo, true);
+    assert.equal(Number(veiculoComRecomendacao.recomendacaoCusto.diariaMinima), 13.89);
+    const opcoesPrecificacao = await requisitar(`/precificacao/opcoes/${cadastroVeiculo.dados.id}`, { token: token1 });
+    assert.equal(opcoesPrecificacao.status, 200);
+    assert.ok(Array.isArray(opcoesPrecificacao.dados.adicionais));
+    assert.ok(Array.isArray(opcoesPrecificacao.dados.protecoes));
+    assert.ok(opcoesPrecificacao.dados.taxasDisponiveis);
+
     const manutencao = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}/manutencoes`,
       {
@@ -521,6 +607,14 @@ test(
       dataInicio: inicio.toISOString(),
       dataPrevistaDevolucao: devolucao.toISOString(),
     };
+    const cotacao = await requisitar("/precificacao/cotacao", {
+      metodo: "POST",
+      token: token1,
+      corpo: dadosLocacao,
+    });
+    assert.equal(cotacao.status, 200);
+    assert.equal(Number(cotacao.dados.valorTotal), 241.1);
+    assert.equal(Number(cotacao.dados.valorCaucao), 2345.67);
     const cadastroLocacao = await requisitar("/locacoes", {
       metodo: "POST",
       token: token1,
@@ -529,6 +623,18 @@ test(
     assert.equal(cadastroLocacao.status, 201);
     assert.equal(cadastroLocacao.dados.status, "reservada");
     assert.equal(Number(cadastroLocacao.dados.valorTotal), 241.1);
+    assert.equal(Number(cadastroLocacao.dados.preco.valorTotal), 241.1);
+    assert.equal(Number(cadastroLocacao.dados.preco.valorCaucao), 2345.67);
+    assert.equal(cadastroLocacao.dados.preco.regrasAplicadas.versao, 1);
+    const tarifaAtualizada = await requisitar(`/precificacao/tarifas/${tarifaBase.dados.id}`, {
+      metodo: "PATCH",
+      token: token1,
+      corpo: { valorDiaria: 999 },
+    });
+    assert.equal(tarifaAtualizada.status, 200);
+    const locacaoComSnapshot = await requisitar(`/locacoes/${cadastroLocacao.dados.id}`, { token: token1 });
+    assert.equal(Number(locacaoComSnapshot.dados.preco.valorTotal), 241.1);
+    assert.equal(Number(locacaoComSnapshot.dados.valorTotal), 241.1);
     const locacoesDoVeiculo = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}/locacoes`,
       { token: token1 },
@@ -618,6 +724,8 @@ test(
     });
     assert.equal(login2.status, 200);
     const token2 = login2.dados.token;
+    assert.equal((await requisitar("/precificacao/admin", { token: token2 })).status, 403);
+    assert.equal((await requisitar("/precificacao/cotacao", { metodo: "POST", token: token2, corpo: dadosLocacao })).status, 409);
     const locacoesDoVeiculoUser = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}/locacoes`,
       { token: token2 },

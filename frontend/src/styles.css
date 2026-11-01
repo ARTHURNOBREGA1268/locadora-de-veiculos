@@ -1212,3 +1212,113 @@ select {
     width: 100%;
   }
 }
+
+
+/* Precificação e cotação de locações */
+.precificacao-abas {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  flex-wrap: wrap;
+  padding-bottom: 4px;
+}
+.precificacao-abas .botao {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.locacao-formulario {
+  gap: 18px;
+}
+.locacao-formulario fieldset {
+  margin: 0;
+}
+.cotacao-resumo {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #a9c5cc;
+  border-left: 4px solid var(--petroleo);
+  border-radius: 9px;
+  background: #f4f8f9;
+}
+.cotacao-resumo h3 {
+  font-size: 1.12rem;
+}
+.cotacao-resumo p {
+  margin: 0;
+}
+.cotacao-linhas {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+.cotacao-linhas > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #dbe5e8;
+}
+.cotacao-linhas dt {
+  color: var(--apoio);
+}
+.cotacao-linhas dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+.cotacao-linhas .cotacao-total {
+  padding-top: 8px;
+  border-bottom: 0;
+  font-family: var(--display);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+.cotacao-total dt,
+.cotacao-total dd {
+  color: var(--petroleo-escuro);
+}
+@media (max-width: 640px) {
+  .precificacao-abas {
+    flex-wrap: nowrap;
+  }
+  .cotacao-resumo {
+    padding: 14px;
+  }
+}
+
+.precificacao-filtros {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) minmax(150px, 1fr);
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.precificacao-filtros label {
+  display: grid;
+  gap: 6px;
+  color: var(--apoio);
+  font-size: 0.9rem;
+}
+.precificacao-filtros input,
+.precificacao-filtros select {
+  width: 100%;
+}
+@media (max-width: 640px) {
+  .precificacao-filtros {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cotacao-detalhes {
+  padding-top: 10px;
+  border-top: 1px solid #dbe5e8;
+}
+.cotacao-detalhes summary {
+  width: fit-content;
+  color: var(--petroleo);
+  font-weight: 600;
+  cursor: pointer;
+}
+.cotacao-detalhes .cotacao-linhas {
+  margin-top: 12px;
+}
