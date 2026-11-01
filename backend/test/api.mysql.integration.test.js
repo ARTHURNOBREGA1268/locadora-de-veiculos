@@ -765,8 +765,18 @@ test(
     assert.equal(historicoAntes.status, 200);
     assert.equal(historicoAntes.dados.length, 1);
 
+    const checklistLocacao = await requisitar("/locacoes/checklist", { token: token1 });
+    assert.equal(checklistLocacao.status, 200);
+    const respostasChecklist = checklistLocacao.dados.map((item) => ({ itemId: item.id, conforme: true }));
+    const corposTransicao = {
+      retirar: { vistoria: { km: 50000, nivelCombustivel: 80, itensChecklist: respostasChecklist } },
+      iniciar: {},
+      devolver: { vistoria: { km: 50010, nivelCombustivel: 80, itensChecklist: respostasChecklist } },
+    };
     for (const etapa of ['retirar','iniciar','devolver']) {
-      const resultadoEtapa = await requisitar(`/locacoes/${cadastroLocacao.dados.id}/${etapa}`, { metodo: 'PATCH', token: token1 });
+      const resultadoEtapa = await requisitar(`/locacoes/${cadastroLocacao.dados.id}/${etapa}`, {
+        metodo: 'PATCH', token: token1, corpo: corposTransicao[etapa],
+      });
       assert.equal(resultadoEtapa.status, 200);
     }
     const finalizacao = await requisitar(
