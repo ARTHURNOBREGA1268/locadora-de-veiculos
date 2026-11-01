@@ -10,6 +10,7 @@ r.post("/", admin, c.cadastrar);
 r.get("/:id", admin, c.detalhe);
 r.patch("/:id", admin, c.editar);
 r.get("/:id/historico", admin, c.historico);
+r.get("/:id/locacoes", admin, c.locacoesVinculadas);
 r.post(
   "/:id/manutencoes",
   admin,

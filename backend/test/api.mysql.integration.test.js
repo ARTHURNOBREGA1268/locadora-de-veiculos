@@ -463,6 +463,15 @@ test(
     assert.equal(cadastroLocacao.status, 201);
     assert.equal(cadastroLocacao.dados.status, "ATIVA");
     assert.equal(Number(cadastroLocacao.dados.valorTotal), 241.1);
+    const locacoesDoVeiculo = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}/locacoes`,
+      { token: token1 },
+    );
+    assert.equal(locacoesDoVeiculo.status, 200);
+    assert.equal(locacoesDoVeiculo.dados.length, 1);
+    assert.equal(locacoesDoVeiculo.dados[0].id, cadastroLocacao.dados.id);
+    assert.equal(locacoesDoVeiculo.dados[0].status, "ATIVA");
+    assert.equal(Object.hasOwn(locacoesDoVeiculo.dados[0], "usuarioId"), false);
 
     const multaVinculada = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}/multas`,
@@ -543,6 +552,11 @@ test(
     });
     assert.equal(login2.status, 200);
     const token2 = login2.dados.token;
+    const locacoesDoVeiculoUser = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}/locacoes`,
+      { token: token2 },
+    );
+    assert.equal(locacoesDoVeiculoUser.status, 403);
 
     const consultaAlheia = await requisitar(
       `/locacoes/${cadastroLocacao.dados.id}`,
@@ -573,6 +587,12 @@ test(
     assert.equal(finalizacao.dados.status, "FINALIZADA");
     assert.ok(finalizacao.dados.dataDevolucaoEfetiva);
     assert.equal(finalizacao.dados.veiculo.status, "disponivel");
+    const locacoesDepoisDeFinalizar = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}/locacoes`,
+      { token: token1 },
+    );
+    assert.equal(locacoesDepoisDeFinalizar.dados.length, 1);
+    assert.equal(locacoesDepoisDeFinalizar.dados[0].status, "FINALIZADA");
 
     const finalizacaoRepetida = await requisitar(
       `/locacoes/${cadastroLocacao.dados.id}/finalizar`,

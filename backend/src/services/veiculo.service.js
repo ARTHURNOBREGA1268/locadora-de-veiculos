@@ -415,6 +415,24 @@ async function historico(id) {
   ]);
   return { manutencoes, sinistros, multas, vistorias };
 }
+async function locacoesVinculadas(id) {
+  const veiculoId = validId(id, "veiculoId");
+  const veiculo = await prisma.veiculo.findUnique({
+    where: { id: veiculoId },
+    select: { id: true },
+  });
+  if (!veiculo) throw new AppError("Veículo não encontrado", 404);
+  return prisma.locacao.findMany({
+    where: { veiculoId },
+    select: {
+      id: true,
+      dataInicio: true,
+      dataPrevistaDevolucao: true,
+      status: true,
+    },
+    orderBy: { dataInicio: "desc" },
+  });
+}
 async function adicionar(id, kind, body) {
   const veiculoId = validId(id, "veiculoId"),
     rule = HISTORY[kind];
@@ -472,6 +490,7 @@ module.exports = {
   metadados,
   detalhe,
   historico,
+  locacoesVinculadas,
   adicionar,
   publicDto,
   dto: publicDto,

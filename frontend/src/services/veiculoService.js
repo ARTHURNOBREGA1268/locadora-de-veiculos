@@ -30,6 +30,11 @@ export async function historico(id) {
   return data;
 }
 
+export async function locacoesVinculadas(id) {
+  const { data } = await api.get(`/veiculos/${id}/locacoes`);
+  return data;
+}
+
 export async function cadastrarHistorico(id, tipo, dados) {
   const rotas = {
     manutencoes: "manutencoes",

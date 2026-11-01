@@ -22,6 +22,8 @@ const statusNome = {
   inativo: "Inativo",
 };
 const enumNomes = {
+  ATIVA: "Ativa",
+  FINALIZADA: "Finalizada",
   manual: "Manual",
   automatico: "Automático",
   gasolina: "Gasolina",
@@ -75,7 +77,7 @@ const tipos = {
       ["infracao", "Infração", "text", true],
       ["valor", "Valor", "number", true],
       ["status", "Status", "select", ["pendente", "paga", "contestada"], true],
-      ["locacaoId", "ID da locação (opcional)", "number"],
+      ["locacaoId", "Locação vinculada (opcional)", "locacao"],
     ],
   },
   vistorias: {
@@ -86,7 +88,7 @@ const tipos = {
       ["km", "Quilometragem (km)", "number", true],
       ["nivelCombustivel", "Nível de combustível (%)", "number", true],
       ["observacoes", "Observações", "text", true],
-      ["locacaoId", "ID da locação (opcional)", "number"],
+      ["locacaoId", "Locação vinculada (opcional)", "locacao"],
     ],
   },
 };
@@ -190,6 +192,13 @@ const nome = (v) =>
     .replace(/^./, (c) => c.toUpperCase());
 const dateInput = (value) => (value ? String(value).slice(0, 10) : "");
 const dateTimeInput = (value) => (value ? String(value).slice(0, 16) : "");
+const dataHoraLegivel = (value) =>
+  value
+    ? new Date(value).toLocaleString("pt-BR", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : "—";
 const toIso = (value) => (value ? new Date(value).toISOString() : value);
 const labelCampo = (key) =>
   ({
@@ -395,6 +404,8 @@ export default function Veiculos() {
     [salvando, setSalvando] = useState(false),
     [historico, setHistorico] = useState(null),
     [tipoHistorico, setTipoHistorico] = useState("manutencoes");
+  const [locacoes, setLocacoes] = useState([]);
+  const [carregandoLocacoes, setCarregandoLocacoes] = useState(false);
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
@@ -568,12 +579,21 @@ export default function Veiculos() {
     setTipoHistorico("manutencoes");
     setModal("historico");
     setHistorico(null);
+    setLocacoes([]);
+    setCarregandoLocacoes(true);
     setForm({ veiculo: v });
     try {
-      setHistorico(await veiculoService.historico(v.id));
+      const [dadosHistorico, dadosLocacoes] = await Promise.all([
+        veiculoService.historico(v.id),
+        veiculoService.locacoesVinculadas(v.id),
+      ]);
+      setHistorico(dadosHistorico);
+      setLocacoes(dadosLocacoes);
     } catch (e) {
       setAlerta({ tipo: "erro", texto: mensagemDeErro(e) });
       setModal(null);
+    } finally {
+      setCarregandoLocacoes(false);
     }
   }
   async function salvarHistorico(e) {
@@ -929,6 +949,35 @@ export default function Veiculos() {
                             {nome(o)}
                           </option>
                         ))}
+                      </select>
+                    ) : type === "locacao" ? (
+                      <select
+                        id={`hist-${key}`}
+                        name={key}
+                        value={form[key] ? String(form[key]) : ""}
+                        onChange={(e) => campoChange(key, e.target.value)}
+                        disabled={carregandoLocacoes}
+                      >
+                        <option value="">
+                          {carregandoLocacoes
+                            ? "Carregando locações…"
+                            : "Sem vínculo (opcional)"}
+                        </option>
+                        {locacoes.map((locacao) => (
+                          <option key={locacao.id} value={locacao.id}>
+                            #{locacao.id} ·{" "}
+                            {dataHoraLegivel(locacao.dataInicio)}
+                            {" → "}
+                            {dataHoraLegivel(
+                              locacao.dataPrevistaDevolucao,
+                            )} · {nome(locacao.status)}
+                          </option>
+                        ))}
+                        {!carregandoLocacoes && locacoes.length === 0 && (
+                          <option disabled>
+                            Este veículo ainda não possui locações
+                          </option>
+                        )}
                       </select>
                     ) : (
                       <input

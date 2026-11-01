@@ -204,6 +204,7 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   let papelAtual = "USER";
   let consultasDetalhe = 0;
   let consultasHistorico = 0;
+  let consultasLocacoes = 0;
   let criacoesManutencao = 0;
   let dadosManutencaoCriada;
   const veiculo = {
@@ -230,6 +231,23 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
     t,
   );
   substituir(prisma.veiculo, "findMany", async () => [veiculo], t);
+  substituir(
+    prisma.locacao,
+    "findMany",
+    async ({ where }) => {
+      consultasLocacoes += 1;
+      assert.deepEqual(where, { veiculoId: 5 });
+      return [
+        {
+          id: 31,
+          dataInicio: new Date("2026-11-02T12:00:00.000Z"),
+          dataPrevistaDevolucao: new Date("2026-11-04T12:00:00.000Z"),
+          status: "ATIVA",
+        },
+      ];
+    },
+    t,
+  );
   substituir(
     prisma.veiculo,
     "findUnique",
@@ -282,19 +300,32 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
     headers,
     "/veiculos/5/historico",
   );
+  const locacoesUser = await requisitar(base, headers, "/veiculos/5/locacoes");
   assert.equal(detalheUser.resposta.status, 403);
   assert.equal(historicoUser.resposta.status, 403);
+  assert.equal(locacoesUser.resposta.status, 403);
   assert.equal(
     consultasDetalhe,
     0,
     "USER não deve chegar ao service de detalhe",
   );
   assert.equal(consultasHistorico, 0, "USER não deve consultar histórico");
+  assert.equal(
+    consultasLocacoes,
+    0,
+    "USER não deve consultar locações do veículo",
+  );
 
   papelAtual = "ADMIN";
   const detalheAdmin = await requisitar(base, headers, "/veiculos/5");
   assert.equal(detalheAdmin.resposta.status, 200);
   assert.equal(detalheAdmin.dados.renavam, veiculo.renavam);
+  const locacoesAdmin = await requisitar(base, headers, "/veiculos/5/locacoes");
+  assert.equal(locacoesAdmin.resposta.status, 200);
+  assert.equal(locacoesAdmin.dados.length, 1);
+  assert.equal(locacoesAdmin.dados[0].id, 31);
+  assert.equal(locacoesAdmin.dados[0].status, "ATIVA");
+  assert.equal(consultasLocacoes, 1);
 
   const historicoAdmin = await requisitar(
     base,
