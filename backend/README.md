@@ -1,6 +1,6 @@
 # Locadora de Veículos — Backend
 
-API REST do sistema de locação de veículos. O frontend React está no repositório `frontend`.
+API REST e núcleo das regras de negócio do sistema de locação de veículos. No repositório consolidado, a interface React fica na pasta irmã `../frontend`; o MySQL é acessado somente pelo backend.
 
 ## Descrição
 Uma locadora cadastra veículos, controla a disponibilidade e registra as locações feitas por usuários autenticados. O sistema calcula o valor das locações, preserva o histórico e impede duas locações ativas para o mesmo veículo.
@@ -18,7 +18,7 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 - Nome completo
 
 ## Tecnologias
-Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (repositório `frontend`)
+Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (pasta `frontend/`)
 
 ## Requisitos
 - Node.js 18 ou superior
@@ -27,9 +27,9 @@ Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (repositório `frontend`
 ## Instalação e execução
 
 ### Backend
-1. `git clone https://github.com/projeto-dev-web-com-framework/backend.git`
-2. `cd backend`
-3. `npm install`
+1. A partir da raiz do repositório consolidado, entrar na pasta do backend: `cd backend`
+2. Instalar as dependências do lockfile: `npm ci`
+3. Gerar o Prisma Client: `npx prisma generate`
 4. Criar o banco: `CREATE DATABASE locadora CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
 5. Copiar `.env.example` para `.env` e preencher:
 
@@ -47,16 +47,15 @@ Gere um segredo local com `openssl rand -base64 32` e preencha `JWT_SECRET` some
 
 As datas de locação devem ser enviadas como ISO 8601 com fuso horário explícito, por exemplo `2030-01-01T10:00:00.000Z`. Datas de calendário impossíveis, horários inválidos e datas locais sem fuso são rejeitados com HTTP 400.
 
-6. `npx prisma migrate dev` (aplica as migrations versionadas em `prisma/migrations`)
-7. `npx prisma db seed` (cria o usuário de exemplo e 4 veículos)
+6. `npx prisma migrate deploy` (aplica as migrations versionadas em `prisma/migrations`)
+7. `npm run seed` (cria o usuário de exemplo e 4 veículos)
 8. `npm run dev` (a API sobe em `http://localhost:3333`)
 
 ### Frontend
-1. `git clone https://github.com/projeto-dev-web-com-framework/frontend.git`
-2. `cd frontend`
-3. `npm install`
-4. Copiar `.env.example` para `.env` e preencher `VITE_API_URL` com a URL da API (ex.: `http://localhost:3333`)
-5. `npm run dev` e acessar `http://localhost:5173`
+1. A partir da raiz do repositório consolidado, entrar na pasta do frontend: `cd frontend`
+2. Instalar as dependências do lockfile: `npm ci`
+3. Copiar `.env.example` para `.env` e preencher `VITE_API_URL` com a URL da API (ex.: `http://localhost:3333`)
+4. `npm run dev` e acessar `http://localhost:5173`
 
 ## Dados de exemplo
 Usuário: `demo@locadora.com` / senha `123456`
@@ -77,6 +76,10 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | PATCH | /locacoes/:id/finalizar | sim | Finaliza a locação |
 
 Rotas protegidas exigem o header `Authorization: Bearer <token>`.
+
+## Testes
+
+Na pasta `backend/`, execute `npm test` para rodar a suíte automatizada.
 
 ### Exemplos
 ```

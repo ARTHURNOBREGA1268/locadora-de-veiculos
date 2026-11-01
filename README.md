@@ -15,6 +15,13 @@ frontend/  Interface React/Vite e integração HTTP com a API
 - MySQL
 - Uma instância de MySQL acessível pelo backend
 
+## Obter o projeto
+
+```bash
+git clone https://github.com/projeto-dev-web-com-framework/locadora-de-veiculos.git
+cd locadora-de-veiculos
+```
+
 ## Configuração local
 
 1. Configure o banco MySQL e crie um banco para a aplicação.
@@ -29,7 +36,7 @@ Execute cada módulo em um terminal separado.
 
 ```bash
 cd backend
-npm install
+npm ci
 npx prisma generate
 npx prisma migrate deploy
 npm run seed
@@ -40,7 +47,7 @@ npm run dev
 
 ```bash
 cd frontend
-npm install
+npm ci
 npm run dev
 ```
 

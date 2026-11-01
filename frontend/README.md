@@ -1,6 +1,6 @@
 # Locadora de Veículos — Frontend
 
-Interface React do sistema de locação de veículos. Consome a API REST do repositório `backend`.
+Interface React do sistema de locação de veículos. No repositório consolidado, consome a API REST localizada na pasta irmã `../backend`.
 
 ## Funcionalidades
 - Cadastro, login e logout, com identificação do usuário autenticado
@@ -15,13 +15,14 @@ Interface React do sistema de locação de veículos. Consome a API REST do repo
 
 ## Requisitos
 - Node.js 18 ou superior
-- Backend em execução (ver repositório `backend`)
+- Backend em execução (ver pasta `../backend`)
 
 ## Instalação
-1. `npm install`
-2. Copiar `.env.example` para `.env` e preencher `VITE_API_URL` com a URL da API (ex.: `http://localhost:3333`). Se ficar vazio, usa `http://localhost:3333`.
-3. `npm run dev`
-4. Acessar `http://localhost:5173`
+1. A partir da raiz do repositório consolidado, entrar na pasta do frontend: `cd frontend`
+2. Instalar as dependências do lockfile: `npm ci`
+3. Copiar `.env.example` para `.env` e preencher `VITE_API_URL` com a URL da API (ex.: `http://localhost:3333`). Se ficar vazio, usa `http://localhost:3333`.
+4. `npm run dev`
+5. Acessar `http://localhost:5173`
 
 O backend deve ter `CORS_ORIGIN` igual a `http://localhost:5173`.
 
