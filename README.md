@@ -15,6 +15,10 @@ O navegador acessa o frontend e chama a API pela mesma origem usando `/api`. No 
 
 O backend continua sendo o núcleo do sistema. Integrações externas, quando adicionadas, devem ficar em `backend/src/integrations/`, ser usadas por serviços internos e nunca ser chamadas diretamente pelo navegador. O projeto ainda não tem integrações externas implementadas.
 
+## Integração contínua
+
+O workflow em `.github/workflows/ci.yml` roda em pull requests e pushes para `main`: instala as dependências a partir dos lockfiles, executa testes e auditoria npm no backend, e executa auditoria npm e build de produção no frontend. Os testes atuais não exigem uma instância MySQL.
+
 ## Requisitos
 
 - Node.js 20 ou superior e npm
