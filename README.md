@@ -11,7 +11,7 @@ frontend/  Interface React/Vite e integração HTTP com a API
 
 ## Requisitos
 
-- Node.js e npm
+- Node.js 18.11 ou superior e npm
 - MySQL
 - Uma instância de MySQL acessível pelo backend
 

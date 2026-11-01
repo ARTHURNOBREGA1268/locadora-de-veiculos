@@ -21,8 +21,8 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (pasta `frontend/`)
 
 ## Requisitos
-- Node.js 18 ou superior
-- MySQL 8 ou superior, com um usuário que possa criar bancos (o `prisma migrate dev` usa um banco temporário)
+- Node.js 18.11 ou superior
+- MySQL 8 ou superior, com acesso ao banco `locadora` para aplicação das migrations
 
 ## Instalação e execução
 
