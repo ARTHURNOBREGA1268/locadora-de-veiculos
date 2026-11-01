@@ -768,6 +768,14 @@ test(
     const checklistLocacao = await requisitar("/locacoes/checklist", { token: token1 });
     assert.equal(checklistLocacao.status, 200);
     const respostasChecklist = checklistLocacao.dados.map((item) => ({ itemId: item.id, conforme: true }));
+    // A reserva foi criada com antecedência; avance o período persistido para simular os dias até a retirada/devolução.
+    await prisma.locacao.update({
+      where: { id: cadastroLocacao.dados.id },
+      data: {
+        dataInicio: new Date(Date.now() - 26 * 60 * 60 * 1000),
+        dataPrevistaDevolucao: new Date(Date.now() - 60 * 60 * 1000),
+      },
+    });
     const corposTransicao = {
       retirar: { vistoria: { km: 50000, nivelCombustivel: 80, itensChecklist: respostasChecklist } },
       iniciar: {},
@@ -777,7 +785,7 @@ test(
       const resultadoEtapa = await requisitar(`/locacoes/${cadastroLocacao.dados.id}/${etapa}`, {
         metodo: 'PATCH', token: token1, corpo: corposTransicao[etapa],
       });
-      assert.equal(resultadoEtapa.status, 200);
+      assert.equal(resultadoEtapa.status, 200, `${etapa}: ${JSON.stringify(resultadoEtapa.dados)}`);
     }
     const finalizacao = await requisitar(
       `/locacoes/${cadastroLocacao.dados.id}/finalizar`,
