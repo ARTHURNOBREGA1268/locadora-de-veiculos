@@ -113,6 +113,10 @@ test("validação do veículo rejeita placa, RENAVAM, chassi, ano e enum inváli
       /chassi deve conter 17 caracteres válidos/,
     ],
     [{ ...base, anoFabricacao: 1800 }, /anoFabricacao inválido/],
+    [{ ...base, numPortas: 9 }, /numPortas inválido/],
+    [{ ...base, valorCompra: 10000000000 }, /valorCompra inválido/],
+    [{ ...base, valorDiaria: 100000000 }, /valorDiaria inválido/],
+    [{ ...base, apoliceFranquia: 100000000 }, /apoliceFranquia inválido/],
     [
       { ...base, anoFabricacao: 2025, anoModelo: 2024 },
       /anoModelo não pode ser anterior/,
@@ -201,6 +205,7 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   let consultasDetalhe = 0;
   let consultasHistorico = 0;
   let criacoesManutencao = 0;
+  let dadosManutencaoCriada;
   const veiculo = {
     id: 5,
     placa: "ABC1D23",
@@ -255,6 +260,7 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
     "create",
     async ({ data }) => {
       criacoesManutencao += 1;
+      dadosManutencaoCriada = data;
       return { id: 10, ...data, createdAt: new Date(), updatedAt: new Date() };
     },
     t,
@@ -319,6 +325,8 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   );
   assert.equal(novaManutencao.resposta.status, 201);
   assert.equal(criacoesManutencao, 1);
+  assert.deepEqual(dadosManutencaoCriada.veiculo, { connect: { id: 5 } });
+  assert.equal(Object.hasOwn(dadosManutencaoCriada, "veiculoId"), false);
 
   const multaLocacaoAlheia = await requisitar(
     base,

@@ -464,6 +464,56 @@ test(
     assert.equal(cadastroLocacao.dados.status, "ATIVA");
     assert.equal(Number(cadastroLocacao.dados.valorTotal), 241.1);
 
+    const multaVinculada = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}/multas`,
+      {
+        metodo: "POST",
+        token: token1,
+        corpo: {
+          data: "2026-10-24T12:00:00.000Z",
+          infracao: "Infração vinculada à locação",
+          valor: 80,
+          status: "pendente",
+          locacaoId: cadastroLocacao.dados.id,
+        },
+      },
+    );
+    assert.equal(multaVinculada.status, 201);
+    assert.equal(multaVinculada.dados.locacaoId, cadastroLocacao.dados.id);
+    const vistoriaVinculada = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}/vistorias`,
+      {
+        metodo: "POST",
+        token: token1,
+        corpo: {
+          data: "2026-10-24T12:00:00.000Z",
+          tipo: "entrada",
+          km: 50050,
+          nivelCombustivel: 65,
+          observacoes: "Devolução de integração",
+          locacaoId: cadastroLocacao.dados.id,
+        },
+      },
+    );
+    assert.equal(vistoriaVinculada.status, 201);
+    assert.equal(vistoriaVinculada.dados.locacaoId, cadastroLocacao.dados.id);
+    const historicoComVinculos = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}/historico`,
+      { token: token1 },
+    );
+    assert.equal(historicoComVinculos.dados.multas.length, 2);
+    assert.equal(historicoComVinculos.dados.vistorias.length, 2);
+    assert.ok(
+      historicoComVinculos.dados.multas.some(
+        (item) => item.locacaoId === cadastroLocacao.dados.id,
+      ),
+    );
+    assert.ok(
+      historicoComVinculos.dados.vistorias.some(
+        (item) => item.locacaoId === cadastroLocacao.dados.id,
+      ),
+    );
+
     const veiculosDisponiveis = await requisitar("/veiculos?disponivel=true", {
       token: token1,
     });

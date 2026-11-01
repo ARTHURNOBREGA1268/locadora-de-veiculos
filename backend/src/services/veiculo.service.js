@@ -78,26 +78,27 @@ const HISTORY = {
     model: "manutencao",
     required: ["data", "tipo"],
     strings: { tipo: 50, descricao: 5000 },
-    numbers: { valor: 100000000, km: 4294967295 },
+    numbers: { valor: 99999999.99, km: 4294967295 },
   },
   sinistros: {
     model: "sinistroAvaria",
     required: ["data", "descricao"],
     strings: { descricao: 5000 },
-    numbers: { valorReparo: 100000000 },
+    numbers: { valorReparo: 99999999.99 },
     enums: { status: ["aberto", "em_andamento", "resolvido"] },
   },
   multas: {
     model: "multa",
     required: ["data", "infracao", "valor"],
     strings: { infracao: 120 },
-    numbers: { valor: 100000000 },
+    numbers: { valor: 99999999.99 },
     enums: { status: ["pendente", "paga", "contestada"] },
     locacao: true,
   },
   vistorias: {
     model: "vistoria",
     required: ["data", "tipo", "km", "nivelCombustivel"],
+    strings: { observacoes: 5000 },
     numbers: { km: 4294967295, nivelCombustivel: 100 },
     enums: { tipo: ["saida", "entrada"] },
     locacao: true,
@@ -223,7 +224,7 @@ async function cleanVehicle(body, editing) {
     filialId: 2147483647,
     kmAtual: 4294967295,
     nivelCombustivel: 100,
-    numPortas: 255,
+    numPortas: 8,
     numPassageiros: 255,
     capacidadePortaMalas: 65535,
     vidaUtilMeses: 65535,
@@ -231,15 +232,12 @@ async function cleanVehicle(body, editing) {
   }))
     if (data[key] !== undefined)
       data[key] = parseNumber(data[key], key, { max, integer: true });
-  for (const key of [
-    "valorCompra",
-    "valorFipe",
-    "valorRevendaEstimado",
-    "apoliceFranquia",
-    "valorDiaria",
-  ])
+  for (const key of ["valorCompra", "valorFipe", "valorRevendaEstimado"])
     if (data[key] !== undefined)
-      data[key] = parseNumber(data[key], key, { max: 9999999999 });
+      data[key] = parseNumber(data[key], key, { max: 9999999999.99 });
+  for (const key of ["apoliceFranquia", "valorDiaria"])
+    if (data[key] !== undefined)
+      data[key] = parseNumber(data[key], key, { max: 99999999.99 });
   for (const key of [
     "dataCompra",
     "crlvVencimento",
@@ -426,21 +424,13 @@ async function adicionar(id, kind, body) {
     fail("Corpo inválido");
   const allowed = new Set([
     "data",
-    "tipo",
-    "descricao",
-    "valor",
-    "km",
-    "valorReparo",
-    "status",
-    "infracao",
-    "locacaoId",
-    "nivelCombustivel",
-    "observacoes",
+    ...Object.keys(rule.strings || {}),
+    ...Object.keys(rule.numbers || {}),
+    ...Object.keys(rule.enums || {}),
+    ...(rule.locacao ? ["locacaoId"] : []),
   ]);
   onlyKnown(body, allowed);
-  const d = { ...body, veiculoId };
-  for (const key of ["id", "veiculoId", "createdAt", "updatedAt"])
-    delete d[key];
+  const d = { ...body };
   for (const key of rule.required)
     if (d[key] === undefined || d[key] === null || d[key] === "")
       fail(`${key} obrigatório`);
@@ -460,15 +450,19 @@ async function adicionar(id, kind, body) {
         max,
         integer: ["km", "nivelCombustivel"].includes(key),
       });
+  let locacaoId;
   if (rule.locacao && d.locacaoId !== undefined && d.locacaoId !== null) {
-    d.locacaoId = validId(d.locacaoId, "locacaoId");
+    locacaoId = validId(d.locacaoId, "locacaoId");
     const loc = await prisma.locacao.findUnique({
-      where: { id: d.locacaoId },
+      where: { id: locacaoId },
       select: { veiculoId: true },
     });
     if (!loc) throw new AppError("Locação não encontrada", 404);
     if (loc.veiculoId !== veiculoId) fail("locacaoId não pertence ao veículo");
   }
+  delete d.locacaoId;
+  d.veiculo = { connect: { id: veiculoId } };
+  if (locacaoId !== undefined) d.locacao = { connect: { id: locacaoId } };
   return prisma[rule.model].create({ data: d });
 }
 module.exports = {
