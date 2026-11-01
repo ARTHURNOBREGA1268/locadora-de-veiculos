@@ -9,7 +9,9 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 - Cadastro e login de usuários, com senha em hash (bcrypt) e autenticação por JWT
 - Papéis USER e ADMIN; usuários públicos são sempre USER
 - Gestão administrativa de usuários (listar, criar, editar, atribuir USER/ADMIN e ativar/inativar), além do cadastro de veículos restritos a ADMIN
-- Cadastro e listagem de veículos, com filtro de disponíveis
+- Catálogo administrativo de veículos: cadastro/edição de identificação, características, situação operacional, dados financeiros/documentais, categoria, filial e opcionais
+- Listagem pública com campos seguros e filtros por status; detalhe completo e histórico somente para ADMIN
+- Histórico administrativo por veículo: manutenções, sinistros/avarias, multas e vistorias; vínculos de locação são validados
 - Registro de locação com cálculo do valor no backend (qualquer fração de 24 horas conta como diária completa)
 - Listagem das locações do usuário autenticado, com os dados do veículo
 - Finalização de locação, que registra a devolução e libera o veículo
@@ -23,7 +25,7 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (pasta `frontend/`)
 
 ## Requisitos
-- Node.js 18.11 ou superior
+- Node.js 20 ou superior
 - MySQL 8 ou superior, com acesso ao banco `locadora` para aplicação das migrations
 
 ## Instalação e execução
@@ -84,8 +86,16 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | POST | /usuarios | sim, ADMIN | Cadastra usuário (nome, email, senha; papel USER/ADMIN opcional) |
 | PATCH | /usuarios/:id | sim, ADMIN | Edita nome/e-mail, redefine senha, troca papel ou ativa/inativa usuário |
 | POST | /veiculos | sim, ADMIN | Cadastra veículo |
+| GET | /veiculos/metadados | sim | Lista categorias, filiais e opcionais para formulários |
 | GET | /veiculos | sim | Lista veículos |
 | GET | /veiculos?disponivel=true | sim | Lista só os disponíveis |
+| GET | /veiculos/:id | sim, ADMIN | Consulta cadastro completo do veículo |
+| PATCH | /veiculos/:id | sim, ADMIN | Edita o cadastro sem alterar a tarifa diária |
+| GET | /veiculos/:id/historico | sim, ADMIN | Lista manutenções, sinistros, multas e vistorias |
+| POST | /veiculos/:id/manutencoes | sim, ADMIN | Registra manutenção |
+| POST | /veiculos/:id/sinistros | sim, ADMIN | Registra sinistro/avaria |
+| POST | /veiculos/:id/multas | sim, ADMIN | Registra multa e, opcionalmente, vincula locação do mesmo veículo |
+| POST | /veiculos/:id/vistorias | sim, ADMIN | Registra vistoria de saída/entrada |
 | POST | /locacoes | sim | Registra locação |
 | GET | /locacoes | sim | Lista as locações do usuário |
 | GET | /locacoes/:id | sim | Consulta uma locação do usuário |
@@ -95,7 +105,7 @@ Rotas protegidas exigem o header `Authorization: Bearer <token>`. A cada requisi
 
 ## Testes
 
-Na pasta `backend/`, execute `npm test` para rodar os testes unitários/HTTP com Prisma simulado. O cenário de ponta a ponta em `test/api.mysql.integration.test.js` é opt-in: requer um MySQL acessível em `DATABASE_URL`, `JWT_SECRET` com pelo menos 32 caracteres, migrations aplicadas e `RUN_MYSQL_INTEGRATION=true`. O CI configura um MySQL 8 temporário, aplica as migrations e executa esse cenário contra o banco real.
+Na pasta `backend/`, execute `npm test` para rodar os testes unitários/HTTP com Prisma simulado, incluindo validação do catálogo, restrição ADMIN/USER e proteção de campos confidenciais. O cenário de ponta a ponta em `test/api.mysql.integration.test.js` é opt-in: requer um MySQL acessível em `DATABASE_URL`, `JWT_SECRET` com pelo menos 32 caracteres, migrations aplicadas e `RUN_MYSQL_INTEGRATION=true`. O CI configura um MySQL 8 temporário, aplica as migrations e executa esse cenário contra o banco real.
 
 ### Exemplos
 ```
@@ -133,11 +143,14 @@ src/integrations/ adaptadores de integrações externas usados somente pelo back
 - **Identificação do usuário:** o `usuarioId` das locações vem sempre do token (`req.userId`), nunca do corpo da requisição.
 - **Senhas:** guardadas com `bcrypt` (10 rounds). O hash nunca é retornado pela API, porque os `select` do service de autenticação omitem o campo.
 - **Cálculo do valor:** feito no service de locações. Número de diárias é `ceil(duração / 24h)`, multiplicado pela diária do veículo.
-- **Concorrência:** a reserva usa `updateMany` condicionado a `disponivel: true` dentro de `prisma.$transaction`. O banco garante que só uma de duas requisições simultâneas altere a disponibilidade. A segunda recebe 409. A finalização usa a mesma técnica com `status: 'ATIVA'`.
-- **Histórico:** locações e veículos não são excluídos.
+- **Concorrência:** a reserva usa `updateMany` condicionado a `status: 'disponivel'` dentro de `prisma.$transaction`. O banco garante que só uma de duas requisições simultâneas altere o status. A segunda recebe 409. A finalização usa a mesma técnica com `status: 'ATIVA'`.
+- **Histórico:** locações e veículos não são excluídos fisicamente; veículos são inativados, e as FKs de histórico impedem remoção acidental dos registros.
 - **Erros:** `AppError` carrega o código HTTP, e o middleware de erro devolve `{ "erro": "mensagem" }`.
 
 ## Modelo de dados
 - `Usuario` 1:N `Locacao` (`Locacao.usuarioId`)
 - `Veiculo` 1:N `Locacao` (`Locacao.veiculoId`)
+- `CategoriaVeiculo` 1:N `Veiculo`; `Filial` 1:N `Veiculo`
+- `Veiculo` N:N `OpcionalVeiculo` pela tabela `veiculo_opcionais`
+- `Veiculo` 1:N `Manutencao`, `SinistroAvaria`, `Multa` e `Vistoria`
 - E-mail e placa são únicos. `Locacao.status` é `ATIVA` ou `FINALIZADA`.

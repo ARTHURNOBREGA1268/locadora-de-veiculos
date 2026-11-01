@@ -28,7 +28,7 @@ test('usuário autenticado não consegue consultar nem finalizar locação de ou
         usuarioId: 11,
         veiculoId: 7,
         status: 'ATIVA',
-        veiculo: { id: 7, disponivel: false }
+        veiculo: { id: 7, status: 'alugado' }
       };
     }
   });
