@@ -17,7 +17,7 @@ O backend continua sendo o núcleo do sistema. Integrações externas, quando ad
 
 ## Integração contínua
 
-O workflow em `.github/workflows/ci.yml` roda em pull requests e pushes para `main`: instala as dependências a partir dos lockfiles, executa testes e auditoria npm no backend, e executa auditoria npm e build de produção no frontend. Os testes atuais não exigem uma instância MySQL.
+O workflow em `.github/workflows/ci.yml` roda em pull requests e pushes para `main`: instala as dependências a partir dos lockfiles, valida o schema Prisma e gera o client usando uma URL fictícia (sem conexão MySQL), executa testes e auditoria npm no backend, e executa auditoria npm e build de produção no frontend.
 
 ## Requisitos
 
