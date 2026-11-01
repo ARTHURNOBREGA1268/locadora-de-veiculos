@@ -1,6 +1,6 @@
 # Locadora de Veículos — Backend
 
-API REST e núcleo das regras de negócio do sistema de locação de veículos. No repositório consolidado, a interface React fica na pasta irmã `../frontend`; o MySQL é acessado somente pelo backend.
+API REST e núcleo das regras de negócio do sistema de locação de veículos. No repositório consolidado, a interface React fica na pasta irmã `../frontend`; o MySQL é acessado somente pelo backend. A API escuta em loopback por padrão e o frontend a acessa pelo proxy `/api`.
 
 ## Descrição
 Uma locadora cadastra veículos, controla a disponibilidade e registra as locações feitas por usuários autenticados. O sistema calcula o valor das locações, preserva o histórico e impede duas locações ativas para o mesmo veículo.
@@ -38,8 +38,9 @@ Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (pasta `frontend/`)
 | DATABASE_URL | Conexão com o MySQL | `mysql://usuario:senha@localhost:3306/locadora` |
 | JWT_SECRET | Segredo para assinar tokens; obrigatório e com pelo menos 32 caracteres | `openssl rand -base64 32` |
 | JWT_EXPIRES_IN | Validade do token | `1d` |
+| HOST | Interface de rede em que a API escuta; mantenha loopback atrás de um proxy no mesmo host | `127.0.0.1` |
 | PORT | Porta da API | `3333` |
-| CORS_ORIGIN | Origem do frontend | `http://localhost:5173` |
+| CORS_ORIGIN | Origem permitida para chamadas cross-origin | `http://localhost:5173` |
 
 Caracteres especiais na senha do banco devem ser codificados na URL (`@` vira `%40`).
 
@@ -49,12 +50,12 @@ As datas de locação devem ser enviadas como ISO 8601 com fuso horário explíc
 
 6. `npx prisma migrate deploy` (aplica as migrations versionadas em `prisma/migrations`)
 7. `npm run seed` (cria o usuário de exemplo e 4 veículos)
-8. `npm run dev` (a API sobe em `http://localhost:3333`)
+8. `npm run dev` (a API sobe em `http://127.0.0.1:3333` por padrão)
 
 ### Frontend
 1. A partir da raiz do repositório consolidado, entrar na pasta do frontend: `cd frontend`
 2. Instalar as dependências do lockfile: `npm ci`
-3. Copiar `.env.example` para `.env` e preencher `VITE_API_URL` com a URL da API (ex.: `http://localhost:3333`)
+3. Copiar `.env.example` para `.env`, manter `VITE_API_URL=/api` e usar `API_PROXY_TARGET=http://127.0.0.1:3333` no proxy local do Vite
 4. `npm run dev` e acessar `http://localhost:5173`
 
 ## Dados de exemplo
@@ -109,6 +110,7 @@ src/controllers/  entrada e resposta HTTP
 src/services/     validações e regras de negócio, acesso ao Prisma
 src/middlewares/  autenticação JWT e tratamento de erros
 src/lib/          cliente Prisma e AppError
+src/integrations/ adaptadores de integrações externas usados somente pelo backend (nenhum implementado atualmente)
 ```
 
 ## Decisões de projeto

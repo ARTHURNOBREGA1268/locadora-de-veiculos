@@ -6,10 +6,20 @@ const authRoutes = require('./routes/auth.routes');
 const veiculoRoutes = require('./routes/veiculo.routes');
 const locacaoRoutes = require('./routes/locacao.routes');
 const { naoEncontrado, tratarErros } = require('./middlewares/error.middleware');
-
 const app = express();
+const origensPermitidas = (process.env.CORS_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origem) => origem.trim())
+  .filter(Boolean);
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || true }));
+app.use(cors({
+  origin: (origem, callback) => {
+    if (!origem || origensPermitidas.includes(origem)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  }
+}));
 app.use(express.json());
 
 app.use('/auth', authRoutes);

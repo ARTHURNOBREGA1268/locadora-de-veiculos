@@ -20,11 +20,11 @@ Interface React do sistema de locação de veículos. No repositório consolidad
 ## Instalação
 1. A partir da raiz do repositório consolidado, entrar na pasta do frontend: `cd frontend`
 2. Instalar as dependências do lockfile: `npm ci`
-3. Copiar `.env.example` para `.env` e preencher `VITE_API_URL` com a URL da API (ex.: `http://localhost:3333`). Se ficar vazio, usa `http://localhost:3333`.
+3. Copiar `.env.example` para `.env` e manter `VITE_API_URL=/api`; `API_PROXY_TARGET=http://127.0.0.1:3333` é usado apenas pelo proxy local do Vite.
 4. `npm run dev`
 5. Acessar `http://localhost:5173`
 
-O backend deve ter `CORS_ORIGIN` igual a `http://localhost:5173`.
+No desenvolvimento, o Vite encaminha `/api/*` ao backend local. Em produção, publique o frontend atrás de um reverse proxy que sirva os arquivos e encaminhe `/api/*` ao backend privado; veja `../deploy/README.md`. Não configure uma URL pública da API em `VITE_API_URL`.
 
 ## Usuário de exemplo
 `demo@locadora.com` / `123456` (criado pelo seed do backend)

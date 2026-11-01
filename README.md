@@ -1,6 +1,6 @@
 # Sistema de Locação de Veículos
 
-Projeto full stack da atividade de Programação com Frameworks Web. A aplicação é dividida em uma API REST em Node.js/Express e uma interface React. O frontend consome a API; as regras de negócio e o acesso ao MySQL ficam no backend por meio do Prisma.
+Projeto full stack da atividade de Programação com Frameworks Web. A aplicação é dividida em uma API REST em Node.js/Express e uma interface React. A API é o núcleo das regras de negócio; o frontend a consome por `/api`, sem acessar o MySQL diretamente.
 
 ## Estrutura
 
@@ -8,6 +8,12 @@ Projeto full stack da atividade de Programação com Frameworks Web. A aplicaç�
 backend/   API REST, autenticação JWT, regras de negócio, Prisma e migrations
 frontend/  Interface React/Vite e integração HTTP com a API
 ```
+
+## Fronteira de acesso
+
+O navegador acessa o frontend e chama a API pela mesma origem usando `/api`. No desenvolvimento, o servidor Vite encaminha esse caminho ao backend local. No exemplo de produção em `deploy/nginx.conf`, o Nginx serve os arquivos públicos do frontend e encaminha `/api/*` ao backend em `127.0.0.1:3333`; não exponha as portas `3333` da API ou `3306` do MySQL. A implantação é um exemplo para host único e precisa ser adaptada ao provedor escolhido.
+
+O backend continua sendo o núcleo do sistema. Integrações externas, quando adicionadas, devem ficar em `backend/src/integrations/`, ser usadas por serviços internos e nunca ser chamadas diretamente pelo navegador. O projeto ainda não tem integrações externas implementadas.
 
 ## Requisitos
 
@@ -25,8 +31,8 @@ cd locadora-de-veiculos
 ## Configuração local
 
 1. Configure o banco MySQL e crie um banco para a aplicação.
-2. No backend, copie `.env.example` para `.env` e preencha `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT` e `CORS_ORIGIN` conforme seu ambiente. Gere um `JWT_SECRET` com pelo menos 32 caracteres usando `openssl rand -base64 32`. Não compartilhe nem versione o arquivo `.env`.
-3. No frontend, copie `frontend/.env.example` para `frontend/.env` e defina `VITE_API_URL` para o endereço base da API (por exemplo, `http://localhost:3333`).
+2. No backend, copie `.env.example` para `.env` e preencha `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `HOST`, `PORT` e `CORS_ORIGIN`. Mantenha `HOST=127.0.0.1` para acesso local/proxy e gere `JWT_SECRET` com pelo menos 32 caracteres usando `openssl rand -base64 32`. Não compartilhe nem versione o arquivo `.env`.
+3. No frontend, copie `frontend/.env.example` para `frontend/.env`. Mantenha `VITE_API_URL=/api`; `API_PROXY_TARGET` aponta o proxy de desenvolvimento para `http://127.0.0.1:3333` e não é publicado no bundle.
 
 ## Instalação e execução
 
@@ -51,7 +57,7 @@ npm ci
 npm run dev
 ```
 
-Consulte também `backend/README.md` e `frontend/README.md` para os detalhes específicos de cada módulo. Os comandos de banco devem ser executados somente contra o banco local/de desenvolvimento configurado pelo integrante.
+Consulte também `backend/README.md`, `frontend/README.md` e `deploy/README.md` para detalhes de execução e do proxy. Os comandos de banco devem ser executados somente contra o banco local/de desenvolvimento configurado pelo integrante.
 
 ## Integrantes
 
