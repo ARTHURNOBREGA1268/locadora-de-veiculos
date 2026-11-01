@@ -607,10 +607,23 @@ test(
       dataInicio: inicio.toISOString(),
       dataPrevistaDevolucao: devolucao.toISOString(),
     };
+    const clienteReserva = await requisitar("/clientes", {
+      metodo: "POST",
+      token: token1,
+      corpo: {
+        nome: `Cliente de Reserva ${sufixo}`,
+        email: `cliente-reserva-${sufixo}@example.test`,
+      },
+    });
+    assert.equal(clienteReserva.status, 201);
+    const dadosLocacaoAdmin = {
+      ...dadosLocacao,
+      clienteId: clienteReserva.dados.id,
+    };
     const cotacao = await requisitar("/precificacao/cotacao", {
       metodo: "POST",
       token: token1,
-      corpo: dadosLocacao,
+      corpo: dadosLocacaoAdmin,
     });
     assert.equal(cotacao.status, 200);
     assert.equal(Number(cotacao.dados.valorTotal), 241.1);
@@ -618,7 +631,7 @@ test(
     const cadastroLocacao = await requisitar("/locacoes", {
       metodo: "POST",
       token: token1,
-      corpo: dadosLocacao,
+      corpo: dadosLocacaoAdmin,
     });
     assert.equal(cadastroLocacao.status, 201);
     assert.equal(cadastroLocacao.dados.status, "reservada");
@@ -709,7 +722,7 @@ test(
     const locacaoDuplicada = await requisitar("/locacoes", {
       metodo: "POST",
       token: token1,
-      corpo: dadosLocacao,
+      corpo: dadosLocacaoAdmin,
     });
     assert.equal(locacaoDuplicada.status, 409);
 
