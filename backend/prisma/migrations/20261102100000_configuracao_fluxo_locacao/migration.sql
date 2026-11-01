@@ -1,6 +1,7 @@
--- Expande primeiro o ENUM, migra os dados legados e só então o restringe aos estados novos.
+-- Usa VARCHAR temporário porque MySQL compara valores de ENUM sem distinção de maiúsculas/minúsculas
+-- sob o collation padrão, o que torna FINALIZADA e finalizada valores duplicados.
 ALTER TABLE `Locacao`
-  MODIFY `status` ENUM('ATIVA','FINALIZADA','reservada','retirada','em_andamento','devolvida','finalizada','cancelada') NOT NULL DEFAULT 'reservada';
+  MODIFY `status` VARCHAR(20) NOT NULL DEFAULT 'reservada';
 
 UPDATE `Locacao`
 SET `status` = CASE
