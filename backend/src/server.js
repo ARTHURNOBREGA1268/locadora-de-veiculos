@@ -1,4 +1,7 @@
 const app = require('./app');
+const { getJwtSecret } = require('./lib/jwtConfig');
+
+getJwtSecret();
 
 const porta = process.env.PORT || 3333;
 

@@ -18,7 +18,7 @@ frontend/  Interface React/Vite e integração HTTP com a API
 ## Configuração local
 
 1. Configure o banco MySQL e crie um banco para a aplicação.
-2. No backend, copie `.env.example` para `.env` e preencha `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT` e `CORS_ORIGIN` conforme seu ambiente. Não compartilhe nem versione o arquivo `.env`.
+2. No backend, copie `.env.example` para `.env` e preencha `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT` e `CORS_ORIGIN` conforme seu ambiente. Gere um `JWT_SECRET` com pelo menos 32 caracteres usando `openssl rand -base64 32`. Não compartilhe nem versione o arquivo `.env`.
 3. No frontend, copie `frontend/.env.example` para `frontend/.env` e defina `VITE_API_URL` para o endereço base da API (por exemplo, `http://localhost:3333`).
 
 ## Instalação e execução

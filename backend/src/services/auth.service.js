@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const prisma = require('../lib/prisma');
 const AppError = require('../lib/AppError');
+const { getJwtSecret } = require('../lib/jwtConfig');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -50,7 +51,8 @@ async function login({ email, senha }) {
     throw new AppError('Credenciais inválidas', 401);
   }
 
-  const token = jwt.sign({ sub: usuario.id }, process.env.JWT_SECRET, {
+  const token = jwt.sign({ sub: String(usuario.id) }, getJwtSecret(), {
+    algorithm: 'HS256',
     expiresIn: process.env.JWT_EXPIRES_IN || '1d'
   });
 

@@ -36,12 +36,14 @@ Node.js, Express, Prisma ORM, MySQL, JWT, bcrypt, React (repositório `frontend`
 | Variável | Descrição | Exemplo |
 |---|---|---|
 | DATABASE_URL | Conexão com o MySQL | `mysql://usuario:senha@localhost:3306/locadora` |
-| JWT_SECRET | Segredo para assinar tokens | texto longo e aleatório |
+| JWT_SECRET | Segredo para assinar tokens; obrigatório e com pelo menos 32 caracteres | `openssl rand -base64 32` |
 | JWT_EXPIRES_IN | Validade do token | `1d` |
 | PORT | Porta da API | `3333` |
 | CORS_ORIGIN | Origem do frontend | `http://localhost:5173` |
 
 Caracteres especiais na senha do banco devem ser codificados na URL (`@` vira `%40`).
+
+Gere um segredo local com `openssl rand -base64 32` e preencha `JWT_SECRET` somente no arquivo `.env`. O servidor recusa iniciar se o segredo estiver ausente ou tiver menos de 32 caracteres. Nunca versione nem compartilhe o valor gerado.
 
 6. `npx prisma migrate dev` (aplica as migrations versionadas em `prisma/migrations`)
 7. `npx prisma db seed` (cria o usuário de exemplo e 4 veículos)
