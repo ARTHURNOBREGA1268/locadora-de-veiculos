@@ -69,7 +69,7 @@
 - [x] Todas as tabelas novas têm `id INT AUTO_INCREMENT PK`, `created_at DATETIME` e `updated_at DATETIME`, quando aplicável.
 
 ### Regras de migração, segurança e fluxo
-- [x] Migration incremental e backfill preservando reservas existentes: cria Clientes vinculados às contas anteriores, mapeia locações sem inventar CPF, categoria congelada, filial, origem, valores ou eventos operacionais; esses campos históricos permanecem `NULL` quando não têm fonte. Mantém FKs e histórico sem exclusões físicas. Execução real em MySQL ainda não foi feita neste ambiente.
+- [x] Migration incremental e backfill preservando reservas existentes: cria Clientes vinculados às contas anteriores, mapeia locações sem inventar CPF, categoria congelada, filial, origem, valores ou eventos operacionais; esses campos históricos permanecem `NULL` quando não têm fonte. Mantém FKs e histórico sem exclusões físicas. Migration e cenário integral passaram no CI com MySQL real.
 - [x] USER lista, visualiza e opera somente reservas do Cliente associado à própria conta; ADMIN consulta lista global, clientes, cobranças e campos administrativos. Totais e caução são visíveis somente ao próprio titular e a ADMIN.
 - [x] Manter fluxo automático `reservada → retirada → em_andamento → devolvida → finalizada`, cancelamento apenas antes da retirada; não permitir alteração manual livre de status.
 - [x] UI transforma o histórico de cartões em tabela responsiva com detalhe por seção, busca/status e ações correspondentes ao estado; campos calculados/readonly não podem ser forjados pelo frontend.
