@@ -80,7 +80,7 @@ Rotas protegidas exigem o header `Authorization: Bearer <token>`.
 
 ## Testes
 
-Na pasta `backend/`, execute `npm test` para rodar a suíte automatizada. Ela cobre a regra de diária completa para períodos parciais de 24 horas, limites de períodos exatos, preservação de centavos, bloqueio HTTP de consulta/finalização de locação alheia, finalização bem-sucedida e conflitos de finalização repetida/concorrente. Os testes HTTP atravessam as rotas reais, mas substituem os delegates/transações Prisma; portanto não substituem testes de integração com MySQL.
+Na pasta `backend/`, execute `npm test` para rodar os testes unitários/HTTP com Prisma simulado. O cenário de ponta a ponta em `test/api.mysql.integration.test.js` é opt-in: requer um MySQL acessível em `DATABASE_URL`, `JWT_SECRET` com pelo menos 32 caracteres, migrations aplicadas e `RUN_MYSQL_INTEGRATION=true`. O CI configura um MySQL 8 temporário, aplica as migrations e executa esse cenário contra o banco real.
 
 ### Exemplos
 ```
