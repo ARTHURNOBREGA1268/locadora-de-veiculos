@@ -15,7 +15,6 @@ const ENUMS = {
 };
 const PUBLIC_FIELDS = [
   "id",
-  "placa",
   "marca",
   "modelo",
   "versao",
