@@ -19,6 +19,26 @@ function calcularValorTotal(valorDiaria, inicio, fim) {
   return Math.round(Number(valorDiaria) * dias * 100) / 100;
 }
 
+async function reservarVeiculo(tx, veiculoId) {
+  const locacaoAtiva = await tx.locacao.findFirst({
+    where: { veiculoId, status: 'ATIVA' },
+    select: { id: true }
+  });
+
+  if (locacaoAtiva) {
+    throw new AppError('Veículo já possui locação ativa', 409);
+  }
+
+  const reserva = await tx.veiculo.updateMany({
+    where: { id: veiculoId, disponivel: true },
+    data: { disponivel: false }
+  });
+
+  if (reserva.count === 0) {
+    throw new AppError('Veículo indisponível', 409);
+  }
+}
+
 async function criar({ usuarioId, veiculoId, dataInicio, dataPrevistaDevolucao }) {
   const veiculoIdNumero = Number(veiculoId);
   if (!Number.isInteger(veiculoIdNumero) || veiculoIdNumero <= 0) {
@@ -43,14 +63,7 @@ async function criar({ usuarioId, veiculoId, dataInicio, dataPrevistaDevolucao }
   const valorTotal = calcularValorTotal(veiculo.valorDiaria, inicio, fim);
 
   return prisma.$transaction(async (tx) => {
-    const reserva = await tx.veiculo.updateMany({
-      where: { id: veiculoIdNumero, disponivel: true },
-      data: { disponivel: false }
-    });
-
-    if (reserva.count === 0) {
-      throw new AppError('Veículo indisponível', 409);
-    }
+    await reservarVeiculo(tx, veiculoIdNumero);
 
     return tx.locacao.create({
       data: {
@@ -121,4 +134,4 @@ async function finalizar(usuarioId, id) {
   });
 }
 
-module.exports = { criar, listarDoUsuario, buscarDoUsuario, finalizar };
+module.exports = { criar, listarDoUsuario, buscarDoUsuario, finalizar, reservarVeiculo };
