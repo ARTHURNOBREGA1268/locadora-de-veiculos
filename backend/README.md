@@ -80,7 +80,7 @@ Rotas protegidas exigem o header `Authorization: Bearer <token>`.
 
 ## Testes
 
-Na pasta `backend/`, execute `npm test` para rodar a suíte automatizada.
+Na pasta `backend/`, execute `npm test` para rodar a suíte automatizada. Ela inclui a regra de diária completa para períodos parciais de 24 horas, limites de períodos exatos e preservação de centavos no valor total.
 
 ### Exemplos
 ```

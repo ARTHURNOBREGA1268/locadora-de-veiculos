@@ -124,4 +124,4 @@ async function finalizar(usuarioId, id) {
   });
 }
 
-module.exports = { criar, listarDoUsuario, buscarDoUsuario, finalizar, reservarVeiculo };
+module.exports = { criar, listarDoUsuario, buscarDoUsuario, finalizar, reservarVeiculo, calcularValorTotal };
