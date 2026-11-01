@@ -14,6 +14,8 @@ ALTER TABLE `usos_promocao` DROP FOREIGN KEY `usos_promocao_usuario_id_fkey`;
 
 ALTER TABLE `usos_promocao` DROP FOREIGN KEY `usos_promocao_locacao_id_fkey`;
 
+ALTER TABLE `usos_promocao` DROP FOREIGN KEY `usos_promocao_promocao_id_fkey`;
+
 ALTER TABLE `locacao_precos` DROP FOREIGN KEY `locacao_precos_locacao_id_fkey`;
 
 DROP INDEX `usos_promocao_promocao_id_usuario_id_locacao_id_key` ON `usos_promocao`;
@@ -266,6 +268,8 @@ ALTER TABLE `locacoes` ADD CONSTRAINT `locacoes_vistoria_entrada_id_fkey` FOREIG
 ALTER TABLE `multas` ADD CONSTRAINT `multas_locacao_id_fkey` FOREIGN KEY (`locacao_id`) REFERENCES `locacoes`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE `vistorias` ADD CONSTRAINT `vistorias_locacao_id_fkey` FOREIGN KEY (`locacao_id`) REFERENCES `locacoes`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE `usos_promocao` ADD CONSTRAINT `usos_promocao_promocao_id_fkey` FOREIGN KEY (`promocao_id`) REFERENCES `promocoes`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 ALTER TABLE `usos_promocao` ADD CONSTRAINT `usos_promocao_cliente_id_fkey` FOREIGN KEY (`cliente_id`) REFERENCES `clientes`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
