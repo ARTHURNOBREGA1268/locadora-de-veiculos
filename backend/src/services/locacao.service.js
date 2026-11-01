@@ -1,18 +1,8 @@
 const prisma = require('../lib/prisma');
 const AppError = require('../lib/AppError');
+const { converterData } = require('../lib/isoDateTime');
 
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
-
-function converterData(valor, campo) {
-  if (valor === undefined || valor === null || valor === '') {
-    throw new AppError(`${campo} é obrigatória`, 400);
-  }
-  const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) {
-    throw new AppError(`${campo} inválida`, 400);
-  }
-  return data;
-}
 
 function calcularValorTotal(valorDiaria, inicio, fim) {
   const dias = Math.ceil((fim.getTime() - inicio.getTime()) / MS_POR_DIA);

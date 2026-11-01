@@ -45,6 +45,8 @@ Caracteres especiais na senha do banco devem ser codificados na URL (`@` vira `%
 
 Gere um segredo local com `openssl rand -base64 32` e preencha `JWT_SECRET` somente no arquivo `.env`. O servidor recusa iniciar se o segredo estiver ausente ou tiver menos de 32 caracteres. Nunca versione nem compartilhe o valor gerado.
 
+As datas de locação devem ser enviadas como ISO 8601 com fuso horário explícito, por exemplo `2030-01-01T10:00:00.000Z`. Datas de calendário impossíveis, horários inválidos e datas locais sem fuso são rejeitados com HTTP 400.
+
 6. `npx prisma migrate dev` (aplica as migrations versionadas em `prisma/migrations`)
 7. `npx prisma db seed` (cria o usuário de exemplo e 4 veículos)
 8. `npm run dev` (a API sobe em `http://localhost:3333`)
