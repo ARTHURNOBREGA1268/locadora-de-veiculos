@@ -24,7 +24,8 @@ test('fluxo completo da locadora com MySQL real', {
   const credenciais1 = {
     nome: 'Pessoa de Integração',
     email: `integracao-${sufixo}@example.test`,
-    senha: 'senha-segura-123'
+    senha: 'senha-segura-123',
+    papel: 'ADMIN'
   };
   const credenciais2 = {
     nome: 'Outra Pessoa',
@@ -48,6 +49,7 @@ test('fluxo completo da locadora com MySQL real', {
   const registro1 = await requisitar('/auth/register', { metodo: 'POST', corpo: credenciais1 });
   assert.equal(registro1.status, 201);
   assert.equal(registro1.dados.email, credenciais1.email);
+  assert.equal(registro1.dados.papel, 'USER');
   assert.equal(Object.hasOwn(registro1.dados, 'senhaHash'), false);
 
   const login1 = await requisitar('/auth/login', {
@@ -56,14 +58,22 @@ test('fluxo completo da locadora com MySQL real', {
   });
   assert.equal(login1.status, 200);
   assert.ok(login1.dados.token);
+  assert.equal(login1.dados.usuario.papel, 'USER');
+  assert.equal(Object.hasOwn(login1.dados.usuario, 'senhaHash'), false);
   const token1 = login1.dados.token;
 
   const perfil = await requisitar('/auth/me', { token: token1 });
   assert.equal(perfil.status, 200);
   assert.equal(perfil.dados.id, registro1.dados.id);
+  assert.equal(perfil.dados.papel, 'USER');
+  await prisma.usuario.update({ where: { id: registro1.dados.id }, data: { papel: 'ADMIN' } });
 
   const semAutenticacao = await requisitar('/veiculos');
   assert.equal(semAutenticacao.status, 401);
+
+  const usuariosAdmin = await requisitar('/usuarios', { token: token1 });
+  assert.equal(usuariosAdmin.status, 200);
+  assert.equal(usuariosAdmin.dados.some(usuario => Object.hasOwn(usuario, 'senhaHash')), false);
 
   const placa = `CI${String(Date.now()).slice(-6)}A`;
   const dadosVeiculo = {

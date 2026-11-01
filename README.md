@@ -53,6 +53,16 @@ npm run seed
 npm run dev
 ```
 
+### Conta administradora
+
+O cadastro pela interface cria sempre uma conta comum (`USER`). Cadastre uma conta própria com senha forte e, na pasta `backend`, promova-a pelo terminal local:
+
+```bash
+npm run admin:promote -- admin@exemplo.com
+```
+
+Substitua o e-mail pelo da conta criada e confirme digitando `PROMOVER`. Depois, saia e entre novamente no sistema para atualizar a sessão. A tela de usuários e as ações administrativas são reservadas a `ADMIN`. Não promova a conta demo `demo@locadora.com` sem antes trocar a senha padrão `123456` por uma senha forte e única.
+
 ### Frontend
 
 ```bash

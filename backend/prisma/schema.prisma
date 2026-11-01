@@ -12,12 +12,18 @@ enum StatusLocacao {
   FINALIZADA
 }
 
+enum PapelUsuario {
+  USER
+  ADMIN
+}
+
 model Usuario {
   id        Int       @id @default(autoincrement())
   nome      String
   email     String    @unique
   senhaHash String
   criadoEm  DateTime  @default(now())
+  papel     PapelUsuario @default(USER)
   locacoes  Locacao[]
 }
 

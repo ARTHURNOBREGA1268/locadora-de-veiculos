@@ -7,6 +7,8 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 
 ## Funcionalidades
 - Cadastro e login de usuários, com senha em hash (bcrypt) e autenticação por JWT
+- Papéis USER e ADMIN; usuários públicos são sempre USER
+- Listagem de usuários e cadastro administrativo de veículos restritos a ADMIN
 - Cadastro e listagem de veículos, com filtro de disponíveis
 - Registro de locação com cálculo do valor no backend (qualquer fração de 24 horas conta como diária completa)
 - Listagem das locações do usuário autenticado, com os dados do veículo
@@ -52,6 +54,14 @@ As datas de locação devem ser enviadas como ISO 8601 com fuso horário explíc
 7. `npm run seed` (cria o usuário de exemplo e 4 veículos)
 8. `npm run dev` (a API sobe em `http://127.0.0.1:3333` por padrão)
 
+A migration `20261101180000_add_usuario_papel` adiciona a coluna `Usuario.papel` com default `USER`; as contas existentes recebem `USER` sem alteração dos demais dados. O cadastro público sempre cria uma conta USER. Para preparar uma conta ADMIN, cadastre uma conta separada com senha forte e promova-a localmente, substituindo o e-mail pelo da conta criada:
+
+```bash
+npm run admin:promote -- admin@exemplo.com
+```
+
+O comando requer acesso ao `DATABASE_URL` do ambiente e a confirmação digitada `PROMOVER`; ele não cria contas nem expõe endpoint HTTP de promoção. Não promova a conta demo `demo@locadora.com` sem antes substituir a senha padrão `123456` por uma senha forte e única.
+
 ### Frontend
 1. A partir da raiz do repositório consolidado, entrar na pasta do frontend: `cd frontend`
 2. Instalar as dependências do lockfile: `npm ci`
@@ -68,7 +78,8 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | POST | /auth/register | não | Cadastra usuário |
 | POST | /auth/login | não | Retorna o JWT |
 | GET | /auth/me | sim | Dados do usuário autenticado |
-| POST | /veiculos | sim | Cadastra veículo |
+| GET | /usuarios | sim, ADMIN | Lista usuários sem senhaHash |
+| POST | /veiculos | sim, ADMIN | Cadastra veículo |
 | GET | /veiculos | sim | Lista veículos |
 | GET | /veiculos?disponivel=true | sim | Lista só os disponíveis |
 | POST | /locacoes | sim | Registra locação |
@@ -76,7 +87,7 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | GET | /locacoes/:id | sim | Consulta uma locação do usuário |
 | PATCH | /locacoes/:id/finalizar | sim | Finaliza a locação |
 
-Rotas protegidas exigem o header `Authorization: Bearer <token>`.
+Rotas protegidas exigem o header `Authorization: Bearer <token>`. O papel atual é consultado no banco nas rotas administrativas; papéis presentes em dados enviados pelo cliente ou em claims de token não concedem privilégios.
 
 ## Testes
 

@@ -445,3 +445,154 @@ select {
     animation: none !important;
   }
 }
+
+
+.painel-usuarios {
+  display: grid;
+  gap: 20px;
+}
+
+.usuarios-barra {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--linha);
+}
+
+.usuarios-contagem {
+  margin-top: 4px;
+  font-size: 0.9rem;
+}
+
+.tabela-usuarios-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tabela-usuarios {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.tabela-usuarios th {
+  color: var(--apoio);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tabela-usuarios th,
+.tabela-usuarios td {
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--linha);
+  vertical-align: middle;
+}
+
+.tabela-usuarios th:first-child,
+.tabela-usuarios td:first-child {
+  padding-left: 0;
+}
+
+.tabela-usuarios th:last-child,
+.tabela-usuarios td:last-child {
+  padding-right: 0;
+}
+
+.tabela-usuarios tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.usuario-tabela-nome {
+  font-weight: 600;
+}
+
+.selo-admin {
+  background: #e8edf7;
+  color: #28467d;
+}
+
+.selo-user {
+  background: #edf1f3;
+  color: #46565e;
+}
+
+.usuarios-erro {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid var(--ocupado);
+  border-radius: 8px;
+  background: var(--ocupado-fundo);
+  color: #6d2616;
+}
+
+.usuarios-erro p {
+  margin: 0;
+}
+
+.usuarios-erro .botao {
+  margin-top: 8px;
+}
+
+.usuarios-vazio {
+  border: 0;
+  background: #f8fafb;
+}
+
+@media (max-width: 640px) {
+  .painel-usuarios {
+    padding: 16px;
+  }
+
+  .usuarios-barra {
+    align-items: flex-start;
+  }
+
+  .tabela-usuarios thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .tabela-usuarios,
+  .tabela-usuarios tbody,
+  .tabela-usuarios tr,
+  .tabela-usuarios td {
+    display: block;
+    width: 100%;
+  }
+
+  .tabela-usuarios tr {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--linha);
+  }
+
+  .tabela-usuarios tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .tabela-usuarios td,
+  .tabela-usuarios td:first-child,
+  .tabela-usuarios td:last-child {
+    display: grid;
+    grid-template-columns: minmax(95px, 0.65fr) minmax(0, 1.35fr);
+    gap: 12px;
+    padding: 6px 0;
+    border: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .tabela-usuarios td::before {
+    content: attr(data-label);
+    color: var(--apoio);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+}

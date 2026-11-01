@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import * as veiculoService from '../services/veiculoService';
 import { mensagemDeErro } from '../services/api';
 import Alert from '../components/Alert';
@@ -12,6 +13,7 @@ const filtros = [
 ];
 
 export default function Veiculos() {
+  const { usuario } = useAuth();
   const [veiculos, setVeiculos] = useState([]);
   const [filtro, setFiltro] = useState('todos');
   const [carregando, setCarregando] = useState(true);
@@ -50,10 +52,10 @@ export default function Veiculos() {
     <>
       <div className="cabecalho-pagina">
         <h1>Veículos</h1>
-        <p className="apoio">Cadastre veículos da frota e acompanhe a disponibilidade.</p>
+        <p className="apoio">{usuario?.papel === 'ADMIN' ? 'Gerencie a frota e acompanhe a disponibilidade.' : 'Consulte a frota e acompanhe a disponibilidade.'}</p>
       </div>
       <Alert alerta={alerta} onFechar={() => setAlerta(null)} />
-      <VeiculoForm onSubmit={cadastrar} />
+      {usuario?.papel === 'ADMIN' && <VeiculoForm onSubmit={cadastrar} />}
       <div className="barra-filtro">
         <h2>Frota</h2>
         <div className="filtro" role="group" aria-label="Filtrar por disponibilidade">

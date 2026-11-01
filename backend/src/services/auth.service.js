@@ -6,7 +6,7 @@ const { getJwtSecret } = require('../lib/jwtConfig');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const selectPublico = { id: true, nome: true, email: true, criadoEm: true };
+const selectPublico = { id: true, nome: true, email: true, papel: true, criadoEm: true };
 
 async function registrar({ nome, email, senha }) {
   if (typeof nome !== 'string' || nome.trim().length < 2) {
@@ -62,6 +62,7 @@ async function login({ email, senha }) {
       id: usuario.id,
       nome: usuario.nome,
       email: usuario.email,
+      papel: usuario.papel,
       criadoEm: usuario.criadoEm
     }
   };

@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "test": "node --test",
     "migrate": "prisma migrate dev",
-    "seed": "prisma db seed"
+    "seed": "prisma db seed",
+    "admin:promote": "node scripts/promote-admin.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
