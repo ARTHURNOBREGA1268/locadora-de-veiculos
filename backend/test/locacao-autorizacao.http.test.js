@@ -7,8 +7,15 @@ process.env.CORS_ORIGIN = 'http://localhost:5173';
 
 const prisma = require('../src/lib/prisma');
 const app = require('../src/app');
+function autenticarUsuarioAtivo(t) {
+  const delegate = prisma.usuario;
+  const original = delegate.findUnique;
+  Object.defineProperty(delegate, 'findUnique', { configurable: true, writable: true, value: async () => ({ ativo: true, papel: 'USER' }) });
+  t.after(() => { if (original === undefined) delete delegate.findUnique; else delegate.findUnique = original; });
+}
 
 test('usuário autenticado não consegue consultar nem finalizar locação de outro usuário', async t => {
+  autenticarUsuarioAtivo(t);
   const chamadasBanco = [];
   const delegate = prisma.locacao;
   Object.defineProperty(delegate, 'findUnique', {

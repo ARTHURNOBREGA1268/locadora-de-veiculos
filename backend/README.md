@@ -8,7 +8,7 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 ## Funcionalidades
 - Cadastro e login de usuários, com senha em hash (bcrypt) e autenticação por JWT
 - Papéis USER e ADMIN; usuários públicos são sempre USER
-- Listagem de usuários e cadastro administrativo de veículos restritos a ADMIN
+- Gestão administrativa de usuários (listar, criar, editar, atribuir USER/ADMIN e ativar/inativar), além do cadastro de veículos restritos a ADMIN
 - Cadastro e listagem de veículos, com filtro de disponíveis
 - Registro de locação com cálculo do valor no backend (qualquer fração de 24 horas conta como diária completa)
 - Listagem das locações do usuário autenticado, com os dados do veículo
@@ -50,7 +50,9 @@ Gere um segredo local com `openssl rand -base64 32` e preencha `JWT_SECRET` some
 
 As datas de locação devem ser enviadas como ISO 8601 com fuso horário explícito, por exemplo `2030-01-01T10:00:00.000Z`. Datas de calendário impossíveis, horários inválidos e datas locais sem fuso são rejeitados com HTTP 400.
 
-6. `npx prisma migrate deploy` (aplica as migrations versionadas em `prisma/migrations`)
+6. `npx prisma migrate deploy` (aplica as migrations versionadas em `prisma/migrations`, incluindo os campos `ativo` e `tokenVersion`)
+
+Em alterações locais do schema, use `npx prisma migrate dev --name nome_da_migration`; regenere o client com `npx prisma generate` (com `DATABASE_URL` configurada). Em CI/produção aplique migrations com `npx prisma migrate deploy`.
 7. `npm run seed` (cria o usuário de exemplo e 4 veículos)
 8. `npm run dev` (a API sobe em `http://127.0.0.1:3333` por padrão)
 
@@ -78,7 +80,9 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | POST | /auth/register | não | Cadastra usuário |
 | POST | /auth/login | não | Retorna o JWT |
 | GET | /auth/me | sim | Dados do usuário autenticado |
-| GET | /usuarios | sim, ADMIN | Lista usuários sem senhaHash |
+| GET | /usuarios | sim, ADMIN | Lista usuários ativos e inativos sem senhaHash |
+| POST | /usuarios | sim, ADMIN | Cadastra usuário (nome, email, senha; papel USER/ADMIN opcional) |
+| PATCH | /usuarios/:id | sim, ADMIN | Edita nome/e-mail, redefine senha, troca papel ou ativa/inativa usuário |
 | POST | /veiculos | sim, ADMIN | Cadastra veículo |
 | GET | /veiculos | sim | Lista veículos |
 | GET | /veiculos?disponivel=true | sim | Lista só os disponíveis |
@@ -87,7 +91,7 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | GET | /locacoes/:id | sim | Consulta uma locação do usuário |
 | PATCH | /locacoes/:id/finalizar | sim | Finaliza a locação |
 
-Rotas protegidas exigem o header `Authorization: Bearer <token>`. O papel atual é consultado no banco nas rotas administrativas; papéis presentes em dados enviados pelo cliente ou em claims de token não concedem privilégios.
+Rotas protegidas exigem o header `Authorization: Bearer <token>`. A cada requisição protegida, status, papel e versão de sessão são consultados no banco. Contas inativas são bloqueadas imediatamente; redefinir senha ou inativar incrementa a versão e revoga tokens existentes, inclusive se a conta for reativada depois. O papel de autorização vem do banco, nunca do cliente/JWT. Não há exclusão física: inativar preserva histórico. Administradores não podem inativar/rebaixar a si mesmos nem remover o último ADMIN ativo; conflitos retornam 409. Cadastro público cria sempre USER ativo e ignora papel/status enviados pelo cliente.
 
 ## Testes
 
@@ -108,7 +112,7 @@ POST /locacoes
 | 200 / 201 | Sucesso / criação |
 | 400 | Validação de entrada |
 | 401 | Token ausente ou inválido, credenciais inválidas |
-| 403 | Locação de outro usuário |
+| 403 | Acesso negado (por exemplo, locação de outro usuário ou rota ADMIN) |
 | 404 | Veículo ou locação inexistente |
 | 409 | Placa ou e-mail duplicado, veículo indisponível, locação já finalizada |
 | 500 | Erro interno |

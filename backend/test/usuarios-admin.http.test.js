@@ -15,7 +15,7 @@ test('GET /usuarios exige usuário ADMIN atual no banco e retorna somente dados 
   };
   let papelAtual = 'USER';
   let argsListagem;
-  delegate.findUnique = async ({ where }) => where.id === 42 ? { papel: papelAtual } : null;
+  delegate.findUnique = async ({ where }) => where.id === 42 ? { papel: papelAtual, ativo: true } : null;
   delegate.findMany = async args => {
     argsListagem = args;
     return [{ id: 2, nome: 'Admin', email: 'admin@example.test', papel: 'ADMIN', criadoEm: new Date('2026-01-02') }];

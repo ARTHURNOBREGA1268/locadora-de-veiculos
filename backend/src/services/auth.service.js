@@ -6,7 +6,7 @@ const { getJwtSecret } = require('../lib/jwtConfig');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const selectPublico = { id: true, nome: true, email: true, papel: true, criadoEm: true };
+const selectPublico = { id: true, nome: true, email: true, papel: true, ativo: true, criadoEm: true };
 
 async function registrar({ nome, email, senha }) {
   if (typeof nome !== 'string' || nome.trim().length < 2) {
@@ -46,12 +46,12 @@ async function login({ email, senha }) {
     where: { email: email.trim().toLowerCase() }
   });
 
-  const credenciaisValidas = usuario && (await bcrypt.compare(senha, usuario.senhaHash));
+  const credenciaisValidas = usuario && usuario.ativo && (await bcrypt.compare(senha, usuario.senhaHash));
   if (!credenciaisValidas) {
     throw new AppError('Credenciais inválidas', 401);
   }
 
-  const token = jwt.sign({ sub: String(usuario.id) }, getJwtSecret(), {
+  const token = jwt.sign({ sub: String(usuario.id), ver: usuario.tokenVersion ?? 0 }, getJwtSecret(), {
     algorithm: 'HS256',
     expiresIn: process.env.JWT_EXPIRES_IN || '1d'
   });
@@ -63,6 +63,7 @@ async function login({ email, senha }) {
       nome: usuario.nome,
       email: usuario.email,
       papel: usuario.papel,
+      ativo: usuario.ativo,
       criadoEm: usuario.criadoEm
     }
   };
@@ -73,9 +74,7 @@ async function perfil(usuarioId) {
     where: { id: usuarioId },
     select: selectPublico
   });
-  if (!usuario) {
-    throw new AppError('Usuário não encontrado', 401);
-  }
+  if (!usuario || !usuario.ativo) throw new AppError('Usuário inexistente ou inativo', 401);
   return usuario;
 }
 

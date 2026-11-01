@@ -7,6 +7,12 @@ process.env.CORS_ORIGIN = 'http://localhost:5173';
 
 const prisma = require('../src/lib/prisma');
 const app = require('../src/app');
+function autenticarUsuarioAtivo(t) {
+  const delegate = prisma.usuario;
+  const original = delegate.findUnique;
+  Object.defineProperty(delegate, 'findUnique', { configurable: true, writable: true, value: async () => ({ ativo: true, papel: 'USER' }) });
+  t.after(() => { if (original === undefined) delete delegate.findUnique; else delegate.findUnique = original; });
+}
 
 function substituirTemporariamente(alvo, chave, valor, t) {
   Object.defineProperty(alvo, chave, {
@@ -38,6 +44,7 @@ async function iniciarServidor(t) {
 }
 
 test('finalização bem-sucedida registra devolução e libera o veículo', async t => {
+  autenticarUsuarioAtivo(t);
   const estado = {
     locacao: {
       id: 42,
@@ -88,6 +95,7 @@ test('finalização bem-sucedida registra devolução e libera o veículo', asyn
 });
 
 test('retorna 409 se a locação já estiver finalizada', async t => {
+  autenticarUsuarioAtivo(t);
   substituirTemporariamente(prisma.locacao, 'findUnique', async () => ({
     id: 42,
     usuarioId: 11,
@@ -112,6 +120,7 @@ test('retorna 409 se a locação já estiver finalizada', async t => {
 });
 
 test('retorna 409 e não libera veículo se a atualização condicional perder a corrida', async t => {
+  autenticarUsuarioAtivo(t);
   substituirTemporariamente(prisma.locacao, 'findUnique', async () => ({
     id: 42,
     usuarioId: 11,

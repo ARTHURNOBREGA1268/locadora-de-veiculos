@@ -24,6 +24,8 @@ model Usuario {
   senhaHash String
   criadoEm  DateTime  @default(now())
   papel     PapelUsuario @default(USER)
+  ativo     Boolean   @default(true)
+  tokenVersion Int    @default(0)
   locacoes  Locacao[]
 }
 
@@ -48,7 +50,7 @@ model Locacao {
   valorTotal            Decimal       @db.Decimal(10, 2)
   status                StatusLocacao @default(ATIVA)
   usuario               Usuario       @relation(fields: [usuarioId], references: [id])
-  veiculo               Veiculo       @relation(fields: [veiculoId], references: [id])
+  veiculo               Veiculo      @relation(fields: [veiculoId], references: [id])
 
   @@index([usuarioId])
   @@index([veiculoId])

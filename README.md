@@ -19,6 +19,8 @@ O backend continua sendo o núcleo do sistema. Integrações externas, quando ad
 
 O workflow em `.github/workflows/ci.yml` roda em pull requests e pushes para `main`: valida o schema Prisma e gera o client, executa testes e auditoria npm no backend, roda um cenário da API contra MySQL 8 efêmero (aplicando as migrations) e executa auditoria npm e build de produção no frontend. O teste de integração não precisa ser habilitado nos testes locais sem MySQL.
 
+Administradores podem listar, cadastrar e editar contas pela tela **Usuários**, alternar o perfil único `USER`/`ADMIN` e ativar ou inativar contas. A inativação preserva o histórico e bloqueia o acesso; redefinir a senha ou inativar revoga os tokens de sessão anteriores. O cadastro público continua criando somente `USER`.
+
 ## Requisitos
 
 - Node.js 20 ou superior e npm

@@ -75,6 +75,75 @@ test('fluxo completo da locadora com MySQL real', {
   assert.equal(usuariosAdmin.status, 200);
   assert.equal(usuariosAdmin.dados.some(usuario => Object.hasOwn(usuario, 'senhaHash')), false);
 
+  const usuarioGerenciado = await requisitar('/usuarios', {
+    metodo: 'POST', token: token1,
+    corpo: { nome: 'Conta Gerenciada', email: `gerenciada-${sufixo}@example.test`, senha: 'senha-inicial-forte', papel: 'ADMIN' }
+  });
+  assert.equal(usuarioGerenciado.status, 201);
+  assert.equal(usuarioGerenciado.dados.papel, 'ADMIN');
+  assert.equal(usuarioGerenciado.dados.ativo, true);
+  assert.equal(Object.hasOwn(usuarioGerenciado.dados, 'senhaHash'), false);
+  const edicaoGerenciada = await requisitar(`/usuarios/${usuarioGerenciado.dados.id}`, {
+    metodo: 'PATCH', token: token1, corpo: { nome: 'Conta Gerenciada Atualizada' }
+  });
+  assert.equal(edicaoGerenciada.status, 200);
+  assert.equal(edicaoGerenciada.dados.nome, 'Conta Gerenciada Atualizada');
+  const loginGerenciado = await requisitar('/auth/login', {
+    metodo: 'POST', corpo: { email: usuarioGerenciado.dados.email, senha: 'senha-inicial-forte' }
+  });
+  assert.equal(loginGerenciado.status, 200);
+  const alteracoesConcorrentes = await Promise.all([
+    requisitar(`/usuarios/${usuarioGerenciado.dados.id}`, {
+      metodo: 'PATCH', token: token1, corpo: { papel: 'USER' }
+    }),
+    requisitar(`/usuarios/${registro1.dados.id}`, {
+      metodo: 'PATCH', token: loginGerenciado.dados.token, corpo: { papel: 'USER' }
+    })
+  ]);
+  assert.ok(alteracoesConcorrentes.every(resultado => [200, 403, 409].includes(resultado.status)));
+  const adminsDeTeste = await prisma.usuario.count({
+    where: { id: { in: [registro1.dados.id, usuarioGerenciado.dados.id] }, papel: 'ADMIN', ativo: true }
+  });
+  assert.ok(adminsDeTeste >= 1, 'uma alteração concorrente nunca pode remover o último ADMIN ativo');
+  await prisma.usuario.update({ where: { id: registro1.dados.id }, data: { papel: 'ADMIN' } });
+  const redefinicaoSenha = await requisitar(`/usuarios/${usuarioGerenciado.dados.id}`, {
+    metodo: 'PATCH', token: token1, corpo: { senha: 'senha-alterada-segura' }
+  });
+  assert.equal(redefinicaoSenha.status, 200);
+  assert.equal((await requisitar('/auth/me', { token: loginGerenciado.dados.token })).status, 401);
+  assert.equal((await requisitar('/auth/login', {
+    metodo: 'POST', corpo: { email: usuarioGerenciado.dados.email, senha: 'senha-inicial-forte' }
+  })).status, 401);
+  const loginSenhaNova = await requisitar('/auth/login', {
+    metodo: 'POST', corpo: { email: usuarioGerenciado.dados.email, senha: 'senha-alterada-segura' }
+  });
+  assert.equal(loginSenhaNova.status, 200);
+  const trocaPapel = await requisitar(`/usuarios/${usuarioGerenciado.dados.id}`, {
+    metodo: 'PATCH', token: token1, corpo: { papel: 'USER' }
+  });
+  assert.equal(trocaPapel.status, 200);
+  assert.equal(trocaPapel.dados.papel, 'USER');
+  const inativacao = await requisitar(`/usuarios/${usuarioGerenciado.dados.id}`, {
+    metodo: 'PATCH', token: token1, corpo: { ativo: false }
+  });
+  assert.equal(inativacao.status, 200);
+  assert.equal(inativacao.dados.ativo, false);
+  assert.equal((await requisitar('/auth/me', { token: loginSenhaNova.dados.token })).status, 401);
+  assert.equal((await requisitar('/auth/login', {
+    metodo: 'POST', corpo: { email: usuarioGerenciado.dados.email, senha: 'senha-inicial-forte' }
+  })).status, 401);
+  const reativacao = await requisitar(`/usuarios/${usuarioGerenciado.dados.id}`, {
+    metodo: 'PATCH', token: token1, corpo: { ativo: true }
+  });
+  assert.equal(reativacao.status, 200);
+  assert.equal(reativacao.dados.ativo, true);
+  assert.equal((await requisitar('/auth/me', { token: loginSenhaNova.dados.token })).status, 401);
+  const novoLoginGerenciado = await requisitar('/auth/login', {
+    metodo: 'POST', corpo: { email: usuarioGerenciado.dados.email, senha: 'senha-alterada-segura' }
+  });
+  assert.equal(novoLoginGerenciado.status, 200);
+  assert.equal((await requisitar('/auth/me', { token: novoLoginGerenciado.dados.token })).status, 200);
+
   const placa = `CI${String(Date.now()).slice(-6)}A`;
   const dadosVeiculo = {
     marca: 'Toyota',
