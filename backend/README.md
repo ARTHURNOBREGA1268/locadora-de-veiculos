@@ -96,7 +96,7 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | GET | /veiculos/:id/historico | sim, ADMIN | Lista manutenções, sinistros, multas e vistorias |
 | POST | /veiculos/:id/manutencoes | sim, ADMIN | Registra manutenção |
 | POST | /veiculos/:id/sinistros | sim, ADMIN | Registra sinistro/avaria |
-| POST | /veiculos/:id/multas | sim, ADMIN | Registra multa e, opcionalmente, vincula locação do mesmo veículo |
+| POST | /veiculos/:id/multas | sim, ADMIN | Registra multa, associa pela data à locação compatível e cria cobrança/saldo pendente com taxa administrativa |
 | POST | /veiculos/:id/vistorias | sim, ADMIN | Registra vistoria de saída/entrada |
 | POST | /locacoes | sim | Registra locação reservada |
 | GET | /locacoes | sim | Lista as locações do usuário |
@@ -144,7 +144,7 @@ O ADMIN configura tarifas por categoria e vigência e pode aplicar pisos. A cota
 
 Ao criar uma locação, o serviço recalcula a cotação dentro da transação e salva `Locacao.valorTotal`, a discriminação, as regras aplicadas e a caução vigente em `LocacaoPreco`; a caução é um dado de garantia separado, não compõe o total. O eventual uso de cupom é contabilizado na mesma transação. Consultas históricas leem o snapshot, não a tarifa atual. Tarifas, regras, adicionais, proteções, cupons e níveis são preservados por inativação; alterações administrativas deixam registros de auditoria. `GET /precificacao/opcoes/:veiculoId` retorna apenas taxas necessárias à apresentação de serviços opcionais, não a configuração interna de custos.
 
-Não há integração com gateway de pagamento: forma de pagamento e parcelamento afetam a estimativa das taxas configuradas, mas não cobram, autorizam ou capturam pagamentos. Caução e saldos começam pendentes; ações operacionais não simulam liquidação. Km excedente, atraso e combustível são calculados após registrar a vistoria de devolução; multas de trânsito exigem ocorrência registrada antes de aplicar a taxa administrativa.
+Não há integração com gateway de pagamento: forma de pagamento e parcelamento afetam a estimativa das taxas configuradas, mas não cobram, autorizam ou capturam pagamentos. Caução e saldos começam pendentes; ações operacionais não simulam liquidação. Km excedente, atraso e combustível são calculados após registrar a vistoria de devolução. Ao registrar uma multa, a API procura a locação do veículo cujo período real (ou previsto, se ainda não houver datas reais) cobre a infração. Em caso de sobreposição, o ADMIN seleciona a locação; vínculo a outro veículo ou data fora do período é recusado. A cobrança pendente soma o valor da infração e a taxa administrativa configurada. O vínculo único entre multa e cobrança impede duplicação, e uma multa lançada após a finalização acrescenta o valor final sem alterar o snapshot original de preço.
 
 ## Testes
 

@@ -80,7 +80,7 @@ const tipos = {
       ["infracao", "Infração", "text", true],
       ["valor", "Valor", "number", true],
       ["status", "Status", "select", ["pendente", "paga", "contestada"], true],
-      ["locacaoId", "Locação vinculada (opcional)", "locacao"],
+      ["locacaoId", "Locação específica (opcional)", "locacao"],
     ],
   },
   vistorias: {
@@ -924,6 +924,14 @@ export default function Veiculos() {
             <h3>
               Novo registro de {tipos[tipoHistorico].titulo.toLowerCase()}
             </h3>
+            {tipoHistorico === "multas" && (
+              <p className="frota-nota">
+                A API associa a multa à locação do veículo que cobre a data da
+                infração e cria uma cobrança pendente com a taxa administrativa
+                configurada. Se houver conflito entre períodos, selecione a
+                locação correta.
+              </p>
+            )}
             <div className="grade-campos">
               {tipos[tipoHistorico].campos.map(
                 ([key, label, type, options, required]) => (

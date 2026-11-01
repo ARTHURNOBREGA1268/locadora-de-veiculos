@@ -76,4 +76,4 @@
 
 ## Pendências já identificadas da precificação
 - [x] Cobrança operacional de km excedente, atraso e combustível calculada após registrar a vistoria de devolução, quando a configuração e dados de operação permitem.
-- [ ] Integrar taxa administrativa de multa de trânsito ao fluxo de multas, quando a infração vinculada à locação estiver registrada.
+- [x] Ao registrar multa de um veículo, localizar a locação que cobre a data da infração usando retirada/devolução reais quando disponíveis e o intervalo previsto como fallback. Permitir seleção ADMIN explícita quando houver ambiguidade, rejeitar vínculo a outro veículo ou a uma data fora do período e, havendo vínculo, criar uma única cobrança `multa_transito` do valor da infração mais a taxa administrativa configurada, além de saldo pendente. Preservar o vínculo multa↔cobrança; multas vinculadas após a finalização atualizam o valor final sem reescrever o snapshot original.

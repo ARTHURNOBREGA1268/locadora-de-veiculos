@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const AppError = require("../lib/AppError");
+const Decimal = require("decimal.js");
 
 const STATUSES = [
   "disponivel",
@@ -438,6 +439,123 @@ async function locacoesVinculadas(id) {
     orderBy: { dataInicio: "desc" },
   });
 }
+function cobreData(locacao, data) {
+  if (locacao.status === "cancelada") return false;
+  const inicio = locacao.retiradaReal || locacao.dataInicio;
+  const fim = locacao.dataDevolucaoEfetiva || locacao.dataPrevistaDevolucao;
+  return inicio <= data && data <= fim;
+}
+async function registrarMulta(veiculoId, dados) {
+  const multaData = { ...dados };
+  const locacaoIdInformada = multaData.locacaoId;
+  delete multaData.locacaoId;
+  multaData.veiculo = { connect: { id: veiculoId } };
+
+  return prisma.$transaction(async (tx) => {
+    let locacao = null;
+    if (locacaoIdInformada !== undefined && locacaoIdInformada !== null) {
+      const locacaoId = validId(locacaoIdInformada, "locacaoId");
+      locacao = await tx.locacao.findUnique({
+        where: { id: locacaoId },
+        select: {
+          id: true,
+          veiculoId: true,
+          status: true,
+          dataInicio: true,
+          dataPrevistaDevolucao: true,
+          retiradaReal: true,
+          dataDevolucaoEfetiva: true,
+        },
+      });
+      if (!locacao) throw new AppError("Locação não encontrada", 404);
+      if (locacao.veiculoId !== veiculoId) fail("locacaoId não pertence ao veículo");
+      if (!cobreData(locacao, multaData.data))
+        fail("data da infração fora do período da locação");
+    } else {
+      const candidatas = await tx.locacao.findMany({
+        where: {
+          veiculoId,
+          status: { not: "cancelada" },
+          OR: [
+            { dataInicio: { lte: multaData.data } },
+            { retiradaReal: { lte: multaData.data } },
+          ],
+        },
+        select: {
+          id: true,
+          veiculoId: true,
+          status: true,
+          dataInicio: true,
+          dataPrevistaDevolucao: true,
+          retiradaReal: true,
+          dataDevolucaoEfetiva: true,
+        },
+      });
+      const correspondentes = candidatas.filter((item) => cobreData(item, multaData.data));
+      if (correspondentes.length > 1)
+        throw new AppError(
+          "Mais de uma locação corresponde à data; selecione a locação correta",
+          409,
+        );
+      locacao = correspondentes[0] || null;
+    }
+
+    if (locacao) multaData.locacao = { connect: { id: locacao.id } };
+    const multa = await tx.multa.create({ data: multaData });
+    if (!locacao) return multa;
+
+    const configuracao = await tx.configuracaoPrecificacao.findUnique({
+      where: { id: 1 },
+      select: { taxaAdminMultaTransito: true },
+    });
+    const valorInfracao = new Decimal(dados.valor);
+    const taxaAdministrativa = new Decimal(
+      configuracao?.taxaAdminMultaTransito ?? 0,
+    );
+    const total = valorInfracao.plus(taxaAdministrativa).toDecimalPlaces(2);
+    if (!total.gt(0) || total.gt("99999999.99"))
+      fail("Valor total da multa e taxa administrativa excede o limite permitido");
+    const descricao =
+      `Multa #${multa.id}: ${String(dados.infracao).slice(0, 42)} · ` +
+      `R$ ${valorInfracao.toFixed(2)} + taxa R$ ${taxaAdministrativa.toFixed(2)}`;
+    await tx.locacaoCobrancaExtra.create({
+      data: {
+        locacaoId: locacao.id,
+        multaId: multa.id,
+        tipo: "multa_transito",
+        descricao,
+        valor: total,
+      },
+    });
+    await tx.locacaoPagamento.create({
+      data: {
+        locacaoId: locacao.id,
+        tipo: "saldo",
+        valor: total,
+        status: "pendente",
+      },
+    });
+    if (locacao.status === "finalizada") {
+      const atual = await tx.locacao.findUnique({
+        where: { id: locacao.id },
+        select: { valorFinalCobrado: true, valorTotal: true },
+      });
+      let valorFinal = new Decimal(atual.valorFinalCobrado ?? 0).plus(total);
+      if (atual.valorFinalCobrado === null) {
+        const extras = await tx.locacaoCobrancaExtra.aggregate({
+          where: { locacaoId: locacao.id },
+          _sum: { valor: true },
+        });
+        valorFinal = new Decimal(atual.valorTotal).plus(extras._sum.valor ?? 0);
+      }
+      await tx.locacao.update({
+        where: { id: locacao.id },
+        data: { valorFinalCobrado: valorFinal },
+      });
+    }
+    return multa;
+  }, { isolationLevel: "Serializable" });
+}
 async function adicionar(id, kind, body) {
   const veiculoId = validId(id, "veiculoId"),
     rule = HISTORY[kind];
@@ -473,6 +591,7 @@ async function adicionar(id, kind, body) {
         max,
         integer: ["km", "nivelCombustivel"].includes(key),
       });
+  if (kind === "multas") return registrarMulta(veiculoId, d);
   let locacaoId;
   if (rule.locacao && d.locacaoId !== undefined && d.locacaoId !== null) {
     locacaoId = validId(d.locacaoId, "locacaoId");

@@ -383,17 +383,18 @@ model SinistroAvaria {
 }
 
 model Multa {
-  id        Int         @id @default(autoincrement())
-  veiculoId Int         @map("veiculo_id")
-  data      DateTime    @db.DateTime(3)
-  infracao  String      @db.VarChar(120)
-  valor     Decimal     @db.Decimal(10, 2)
-  status    StatusMulta @default(pendente)
-  locacaoId Int?        @map("locacao_id")
-  veiculo   Veiculo     @relation(fields: [veiculoId], references: [id], onDelete: Restrict)
-  locacao   Locacao?    @relation(fields: [locacaoId], references: [id], onDelete: SetNull)
-  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamp(0)
-  updatedAt DateTime    @updatedAt @map("updated_at") @db.Timestamp(0)
+  id            Int                   @id @default(autoincrement())
+  veiculoId     Int                   @map("veiculo_id")
+  data          DateTime              @db.DateTime(3)
+  infracao      String                @db.VarChar(120)
+  valor         Decimal               @db.Decimal(10, 2)
+  status        StatusMulta           @default(pendente)
+  locacaoId     Int?                  @map("locacao_id")
+  veiculo       Veiculo               @relation(fields: [veiculoId], references: [id], onDelete: Restrict)
+  locacao       Locacao?              @relation(fields: [locacaoId], references: [id], onDelete: SetNull)
+  cobrancaExtra LocacaoCobrancaExtra?
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamp(0)
 
   @@index([veiculoId])
   @@index([locacaoId])
@@ -835,7 +836,9 @@ model LocacaoCobrancaExtra {
   tipo      TipoCobrancaExtraLocacao
   descricao String                   @db.VarChar(120)
   valor     Decimal                  @db.Decimal(10, 2)
+  multaId   Int?                     @unique @map("multa_id")
   locacao   Locacao                  @relation(fields: [locacaoId], references: [id], onDelete: Restrict)
+  multa     Multa?                   @relation(fields: [multaId], references: [id], onDelete: Restrict)
   createdAt DateTime                 @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt DateTime                 @updatedAt @map("updated_at") @db.DateTime(0)
 

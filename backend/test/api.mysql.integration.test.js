@@ -453,6 +453,7 @@ test(
         diasMediosLocacao: 1,
         comissaoPercentual: 0,
         taxaPagamentoPercentual: 0,
+        taxaAdminMultaTransito: 10,
         issPercentual: 0,
       },
     });
@@ -666,16 +667,29 @@ test(
         metodo: "POST",
         token: token1,
         corpo: {
-          data: "2026-10-24T12:00:00.000Z",
+          data: new Date(inicio.getTime() + 3 * 60 * 60 * 1000).toISOString(),
           infracao: "Infração vinculada à locação",
           valor: 80,
           status: "pendente",
-          locacaoId: cadastroLocacao.dados.id,
         },
       },
     );
     assert.equal(multaVinculada.status, 201);
     assert.equal(multaVinculada.dados.locacaoId, cadastroLocacao.dados.id);
+    const cobrancaMulta = await requisitar(
+      `/locacoes/${cadastroLocacao.dados.id}`,
+      { token: token1 },
+    );
+    assert.equal(cobrancaMulta.status, 200);
+    assert.equal(cobrancaMulta.dados.cobrancasExtras.length, 1);
+    assert.equal(Number(cobrancaMulta.dados.cobrancasExtras[0].valor), 90);
+    assert.equal(cobrancaMulta.dados.cobrancasExtras[0].multaId, multaVinculada.dados.id);
+    assert.ok(
+      cobrancaMulta.dados.pagamentos.some(
+        (pagamento) => pagamento.status === "pendente" && Number(pagamento.valor) === 90,
+      ),
+      "a multa e sua taxa administrativa geram um saldo pendente",
+    );
     const vistoriaVinculada = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}/vistorias`,
       {
@@ -796,6 +810,7 @@ test(
     );
     assert.equal(finalizacao.status, 200);
     assert.equal(finalizacao.dados.status, "finalizada");
+    assert.equal(Number(finalizacao.dados.valorFinalCobrado), 331.1);
     assert.ok(finalizacao.dados.dataDevolucaoEfetiva);
     assert.equal(finalizacao.dados.veiculo.status, "disponivel");
     const locacoesDepoisDeFinalizar = await requisitar(

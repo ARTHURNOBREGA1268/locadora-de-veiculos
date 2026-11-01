@@ -284,6 +284,15 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
     t,
   );
   substituir(prisma.locacao, "findUnique", async () => ({ veiculoId: 9 }), t);
+  substituir(
+    prisma,
+    "$transaction",
+    async (operacao) =>
+      operacao({
+        locacao: { findUnique: async () => ({ veiculoId: 9 }) },
+      }),
+    t,
+  );
 
   const { base, headers } = await iniciarServidor(t);
 
@@ -375,4 +384,76 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   );
   assert.equal(multaLocacaoAlheia.resposta.status, 400);
   assert.match(multaLocacaoAlheia.dados.erro, /não pertence ao veículo/);
+});
+
+test("multa durante a retirada real vincula locação e cria cobrança pendente com taxa", async (t) => {
+  const locacao = {
+    id: 31,
+    veiculoId: 5,
+    status: "finalizada",
+    dataInicio: new Date("2026-11-02T12:00:00.000Z"),
+    dataPrevistaDevolucao: new Date("2026-11-04T12:00:00.000Z"),
+    retiradaReal: new Date("2026-11-02T10:00:00.000Z"),
+    dataDevolucaoEfetiva: new Date("2026-11-03T10:00:00.000Z"),
+  };
+  let cobrancaCriada;
+  let pagamentoCriado;
+  let atualizacaoLocacao;
+  const tx = {
+    locacao: {
+      findMany: async () => [locacao],
+      findUnique: async () => ({ valorFinalCobrado: "100.00" }),
+      update: async ({ data }) => {
+        atualizacaoLocacao = data;
+        return { id: locacao.id, ...data };
+      },
+    },
+    multa: {
+      create: async ({ data }) => ({ id: 91, locacaoId: locacao.id, ...data }),
+    },
+    configuracaoPrecificacao: {
+      findUnique: async () => ({ taxaAdminMultaTransito: "12.50" }),
+    },
+    locacaoCobrancaExtra: {
+      create: async ({ data }) => {
+        cobrancaCriada = data;
+        return { id: 101, ...data };
+      },
+    },
+    locacaoPagamento: {
+      create: async ({ data }) => {
+        pagamentoCriado = data;
+        return { id: 111, ...data };
+      },
+    },
+  };
+  substituir(
+    prisma.usuario,
+    "findUnique",
+    async () => ({ ativo: true, papel: "ADMIN", tokenVersion: 0 }),
+    t,
+  );
+  substituir(prisma.veiculo, "findUnique", async () => ({ id: 5 }), t);
+  substituir(prisma, "$transaction", async (operacao) => operacao(tx), t);
+
+  const { base, headers } = await iniciarServidor(t);
+  const resposta = await requisitar(base, headers, "/veiculos/5/multas", {
+    method: "POST",
+    body: {
+      data: "2026-11-02T11:00:00.000Z",
+      infracao: "Estacionamento irregular",
+      valor: 130,
+      status: "pendente",
+    },
+  });
+
+  assert.equal(resposta.resposta.status, 201);
+  assert.equal(resposta.dados.locacaoId, 31);
+  assert.equal(cobrancaCriada.locacaoId, 31);
+  assert.equal(cobrancaCriada.multaId, 91);
+  assert.equal(cobrancaCriada.tipo, "multa_transito");
+  assert.equal(cobrancaCriada.valor.toFixed(2), "142.50");
+  assert.equal(pagamentoCriado.status, "pendente");
+  assert.equal(pagamentoCriado.valor.toFixed(2), "142.50");
+  assert.equal(atualizacaoLocacao.valorFinalCobrado.toFixed(2), "242.50");
 });
