@@ -265,4 +265,3 @@ ALTER TABLE `locacao_precos` ADD CONSTRAINT `locacao_precos_locacao_id_fkey` FOR
 
 -- AddForeignKey
 ALTER TABLE `locacao_precos` ADD CONSTRAINT `locacao_precos_promocao_id_fkey` FOREIGN KEY (`promocao_id`) REFERENCES `promocoes`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
