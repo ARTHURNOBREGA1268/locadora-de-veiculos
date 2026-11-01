@@ -606,6 +606,8 @@ test(
       veiculoId: cadastroVeiculo.dados.id,
       dataInicio: inicio.toISOString(),
       dataPrevistaDevolucao: devolucao.toISOString(),
+      formaPagamento: "credito",
+      parcelas: 1,
     };
     const clienteReserva = await requisitar("/clientes", {
       metodo: "POST",
