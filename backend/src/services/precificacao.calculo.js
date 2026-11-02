@@ -187,7 +187,6 @@ function calcularPreco(params) {
   let piso = categoriaPiso === null || categoriaPiso === undefined ? ZERO : dec(categoriaPiso, "precoPisoCategoria", { min: 0 });
   if (custo.completo && margemMinima) {
     const custoBase = custo.minimoDiario;
-    // A margem mínima serve como piso independente da margem-alvo configurada.
     const minimaMargem = custo.componentes.custoPorDiariaAlugada
       ? new Decimal(custo.componentes.custoPorDiariaAlugada).div(new Decimal(1).minus(margemMinima.div(100))).toDecimalPlaces(2, Decimal.ROUND_HALF_UP)
       : custoBase;
@@ -211,7 +210,6 @@ function calcularPreco(params) {
     piso,
   );
 
-  // Programação dinâmica: compara diária, pacotes de sete dias e de trinta dias.
   const dp = Array(qtdDiarias + 1).fill(null);
   dp[0] = { total: ZERO, segmentos: [], regras: [] };
   const opcoes = [{ tamanho: 1, valor: tarifaDiaria, tipo: "diaria" }];

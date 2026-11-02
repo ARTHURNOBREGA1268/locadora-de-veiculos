@@ -1,6 +1,4 @@
--- Migração preservadora: cria Cliente, copia locações existentes para o novo modelo e troca as FKs sem descartar histórico.
 
--- A coluna usuario_id da locação legada é convertida em cliente_id por meio do vínculo Cliente.usuario_id.
 
 ALTER TABLE `Locacao` DROP FOREIGN KEY `Locacao_usuarioId_fkey`;
 

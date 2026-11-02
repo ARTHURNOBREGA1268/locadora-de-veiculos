@@ -596,7 +596,6 @@ select {
   }
 }
 
-/* Gestão de usuários */
 .usuarios-formulario {
   display: grid;
   gap: 16px;
@@ -694,7 +693,6 @@ select {
   }
 }
 
-/* Frota profissional */
 .frota-topo {
   display: flex;
   justify-content: space-between;
@@ -991,7 +989,6 @@ select {
   }
 }
 
-/* Configurações de locação */
 .config-form {
   display: grid;
   gap: 18px;
@@ -1214,7 +1211,6 @@ select {
 }
 
 
-/* Precificação e cotação de locações */
 .precificacao-abas {
   display: flex;
   gap: 8px;
@@ -1323,7 +1319,6 @@ select {
   margin-top: 12px;
 }
 
-/* Gestão de clientes e tabela operacional de locações */
 .painel-locacoes, .painel-clientes { display: grid; gap: 18px; }
 .locacoes-filtros, .clientes-filtros { display: flex; align-items: end; gap: 14px; flex-wrap: wrap; }
 .locacoes-filtros label, .clientes-filtros label { flex: 1 1 220px; }
@@ -1377,7 +1372,6 @@ select {
 .locacao-switch input[type="checkbox"] { width: auto; accent-color: var(--petroleo); }
 
 
-/* Catálogo público de veículos */
 .marca-link {
   color: #fff;
   text-decoration: none;
@@ -1939,7 +1933,6 @@ select {
 }
 
 
-/* Sistema global responsivo e sizing consistente */
 :root {
   --largura-pagina: 90%;
   --altura-controle: 44px;
@@ -2139,7 +2132,6 @@ pre,
   overflow-wrap: anywhere;
 }
 
-/* Login: composição editorial usando o asset de catálogo já existente */
 .acesso {
   width: 100%;
   min-height: 100vh;
@@ -2394,7 +2386,6 @@ pre,
   text-align: center;
 }
 
-/* Navegação acessível e compacta em telas estreitas */
 .nav-toggle {
   display: none;
   align-items: center;
@@ -2708,7 +2699,6 @@ pre,
 }
 
 
-/* O card de cadastro continua com superfície própria; o login usa a coluna editorial. */
 .painel-acesso:not(.painel-login) {
   width: min(100%, 440px);
   padding: clamp(22px, 4vw, 32px);

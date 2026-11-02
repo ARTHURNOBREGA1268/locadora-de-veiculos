@@ -210,6 +210,7 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   let consultasLocacoes = 0;
   let criacoesManutencao = 0;
   let dadosManutencaoCriada;
+  const filtrosVeiculos = [];
   const veiculo = {
     id: 5,
     placa: "ABC1D23",
@@ -233,7 +234,15 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
     async () => ({ ativo: true, papel: papelAtual, tokenVersion: 0 }),
     t,
   );
-  substituir(prisma.veiculo, "findMany", async () => [veiculo], t);
+  substituir(
+    prisma.veiculo,
+    "findMany",
+    async ({ where }) => {
+      filtrosVeiculos.push(where);
+      return [veiculo];
+    },
+    t,
+  );
   substituir(
     prisma.locacao,
     "findMany",
@@ -305,6 +314,23 @@ test("USER consulta somente lista pública; detalhe e histórico exigem ADMIN; h
   assert.equal(Object.hasOwn(lista.dados[0], "renavam"), false);
   assert.equal(Object.hasOwn(lista.dados[0], "chassi"), false);
   assert.equal(Object.hasOwn(lista.dados[0], "valorCompra"), false);
+
+  const disponiveisUser = await requisitar(
+    base,
+    headers,
+    "/veiculos?disponivel=true",
+  );
+  assert.equal(disponiveisUser.resposta.status, 200);
+  assert.deepEqual(filtrosVeiculos.at(-1), { status: "disponivel" });
+  const indisponiveisUser = await requisitar(
+    base,
+    headers,
+    "/veiculos?disponivel=false",
+  );
+  assert.equal(indisponiveisUser.resposta.status, 200);
+  assert.deepEqual(filtrosVeiculos.at(-1), {
+    status: { in: ["alugado", "reservado"] },
+  });
 
   const detalheUser = await requisitar(base, headers, "/veiculos/5");
   const historicoUser = await requisitar(

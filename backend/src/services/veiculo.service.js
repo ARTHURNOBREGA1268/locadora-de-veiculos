@@ -371,10 +371,16 @@ async function listar({ disponivel, status, userRole }) {
     if (!STATUSES.includes(status)) fail("status inválido");
     where.status = status;
   }
-  if (userRole === "ADMIN" && disponivel !== undefined) {
+  if (disponivel !== undefined) {
     if (!["true", "false"].includes(disponivel))
       fail("Filtro disponivel deve ser true ou false");
-    where.status = disponivel === "true" ? "disponivel" : { not: "disponivel" };
+    if (userRole === "ADMIN") {
+      where.status = disponivel === "true" ? "disponivel" : { not: "disponivel" };
+    } else {
+      where.status = disponivel === "true"
+        ? "disponivel"
+        : { in: ["alugado", "reservado"] };
+    }
   }
   return (
     await prisma.veiculo.findMany({

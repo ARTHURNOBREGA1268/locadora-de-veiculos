@@ -95,3 +95,11 @@
 ## Dados de demonstração abrangentes e seguros — implementado
 - [x] Completar o seed para apresentar dados coerentes nos módulos implementados, incluindo usuários/clientes, categorias/filiais/opcionais/veículos, configurações gerais, custos/tarifas/regras/adicionais/proteções/cupons/fidelidade, locações e seus históricos operacionais/financeiros relacionados, nos limites do schema existente.
 - [x] Dados seed são fictícios e repetíveis: usar chaves estáveis/upserts sem sobrescrever cadastros/configurações reais, nunca apagar fisicamente dados e impedir a execução de dados demonstrativos em produção por padrão; proteger colisões com os identificadores reservados DEMO e documentar credenciais locais sem gravar segredos do ambiente.
+
+
+## Correções técnicas de conformidade sem reversão arquitetural — implementado
+- [x] Preservar `Usuario` 1:1 `Cliente` e `Cliente` 1:N `Locacao`; manter `ADMIN` como único papel autorizado a gerir frota e manter tarifas em `TarifaBase` por categoria, sem aceitar `valorDiaria` no CRUD de veículos.
+- [x] Converter erros de serialização/conflito Prisma `P2034` em HTTP 409; `GET /veiculos?disponivel=true|false` funciona para USER somente dentro da lista pública e sem revelar veículos em manutenção/inativos.
+- [x] Remover os componentes legados `VeiculoForm.jsx` e `VeiculoList.jsx` sem importadores; remover os comentários manuais apontados em cálculo, seed, teste de integração, CSS e migrations.
+- [x] Manter o teste MySQL real opt-in localmente e adicionar duas reservas concorrentes ao fluxo executado pelo job CI MySQL 8, verificando um sucesso e um conflito 409.
+- [x] Confirmar que o `git clone` do README corresponde ao proprietário atual `projeto-dev-web-com-framework/locadora-de-veiculos`; só alterar a URL após uma transferência efetiva do repositório.

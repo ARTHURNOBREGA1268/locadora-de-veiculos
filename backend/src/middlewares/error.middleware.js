@@ -13,6 +13,10 @@ function tratarErros(err, req, res, next) {
     return res.status(400).json({ erro: 'JSON inválido' });
   }
 
+  if (err.code === 'P2034') {
+    return res.status(409).json({ erro: 'Conflito de concorrência; atualize os dados e tente novamente' });
+  }
+
   if (err.code === 'P2002') {
     return res.status(409).json({ erro: 'Registro duplicado' });
   }

@@ -33,7 +33,6 @@ async function seedCadastros(prisma) {
     senha: senhaAdmin,
     papel: "ADMIN",
   });
-  // Um endereço já cadastrado nunca tem seu papel alterado pelo seeder.
   const administradorDemo = contaAdminDemo.papel === "ADMIN" ? contaAdminDemo : usuarioDemo;
 
   const nomesCategorias = ["Econômico", "SUV", "Executivo", "Utilitário", "Compacto", "Sedan", "Luxo"];
@@ -199,7 +198,6 @@ async function seedCadastros(prisma) {
         filialId: filial.id,
         proximaRevisaoKm: v.km + 10000,
         proximaRevisaoData: dataUTC("2027-03-01"),
-        // valorDiaria é legado; a tarifa válida fica em TarifaBase, no módulo de precificação.
       },
     });
     veiculos[v.placa] = veiculo;

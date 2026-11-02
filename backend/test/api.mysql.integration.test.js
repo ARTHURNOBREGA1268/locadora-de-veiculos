@@ -632,6 +632,43 @@ test(
       },
     });
     assert.equal(clienteReserva.status, 201);
+
+    const agoraConcorrencia = Date.now();
+    const veiculoConcorrencia = await requisitar("/veiculos", {
+      metodo: "POST",
+      token: token1,
+      corpo: {
+        ...dadosVeiculo,
+        placa: `${placa.slice(0, -1)}B`,
+        renavam: String(agoraConcorrencia + 1).slice(-11),
+        chassi: `9BWZZZ37${String(agoraConcorrencia + 1).slice(-9)}`,
+      },
+    });
+    assert.equal(veiculoConcorrencia.status, 201);
+    const inicioConcorrencia = new Date(agoraConcorrencia + 5 * 24 * 60 * 60 * 1000);
+    const dadosCorrida = {
+      veiculoId: veiculoConcorrencia.dados.id,
+      clienteId: clienteReserva.dados.id,
+      dataInicio: inicioConcorrencia.toISOString(),
+      dataPrevistaDevolucao: new Date(inicioConcorrencia.getTime() + 25 * 60 * 60 * 1000).toISOString(),
+      formaPagamento: "credito",
+      parcelas: 1,
+    };
+    const reservasConcorrentes = await Promise.all([
+      requisitar("/locacoes", { metodo: "POST", token: token1, corpo: dadosCorrida }),
+      requisitar("/locacoes", { metodo: "POST", token: token1, corpo: dadosCorrida }),
+    ]);
+    assert.equal(
+      reservasConcorrentes.filter((resultado) => resultado.status === 201).length,
+      1,
+      "uma única reserva concorrente deve concluir",
+    );
+    assert.equal(
+      reservasConcorrentes.filter((resultado) => resultado.status === 409).length,
+      1,
+      "a reserva que perde a corrida deve receber conflito HTTP 409",
+    );
+
     const dadosLocacaoAdmin = {
       ...dadosLocacao,
       clienteId: clienteReserva.dados.id,
@@ -795,7 +832,6 @@ test(
     const checklistLocacao = await requisitar("/locacoes/checklist", { token: token1 });
     assert.equal(checklistLocacao.status, 200);
     const respostasChecklist = checklistLocacao.dados.map((item) => ({ itemId: item.id, conforme: true }));
-    // A reserva foi criada com antecedência; avance o período persistido para simular os dias até a retirada/devolução.
     await prisma.locacao.update({
       where: { id: cadastroLocacao.dados.id },
       data: {

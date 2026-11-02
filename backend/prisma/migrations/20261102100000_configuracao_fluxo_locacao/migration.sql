@@ -1,5 +1,3 @@
--- Usa VARCHAR temporário porque MySQL compara valores de ENUM sem distinção de maiúsculas/minúsculas
--- sob o collation padrão, o que torna FINALIZADA e finalizada valores duplicados.
 ALTER TABLE `Locacao`
   MODIFY `status` VARCHAR(20) NOT NULL DEFAULT 'reservada';
 
