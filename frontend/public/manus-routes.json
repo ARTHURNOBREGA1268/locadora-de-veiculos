@@ -2,8 +2,9 @@
   "routes": [
     { "path": "/login", "title": "Entrar" },
     { "path": "/cadastro", "title": "Criar conta" },
+    { "path": "/catalogo", "title": "Catálogo de veículos" },
     { "path": "/locacoes", "title": "Locações" },
-    { "path": "/veiculos", "title": "Veículos" },
+    { "path": "/veiculos", "title": "Gestão da frota" },
     { "path": "/clientes", "title": "Clientes" },
     { "path": "/usuarios", "title": "Usuários" },
     { "path": "/precificacao", "title": "Precificação" },

@@ -45,3 +45,12 @@ Manter a API como fonte autoritativa do sistema, com o frontend consumindo endpo
 
 ## Compatibilidade
 Não usar `Veiculo.valorDiaria` silenciosamente como fallback. Tarifas legadas exigem migration explícita ou cadastro de tarifa base. Para locações antigas, backfill preserva campos existentes, associa Cliente pela conta USER e mantém campos operacionais desconhecidos como NULL.
+
+
+## Catálogo público e organização da navegação
+- A rota pública `/catalogo` consome endpoints REST de leitura do próprio backend para veículos disponíveis e um subconjunto curado das regras comerciais; nenhum dado administrativo de identificação/documentação/custo é exposto.
+- O catálogo apresenta informações de produto, filtros de busca e regras de locação configuradas. Não publica preço fixo do veículo: a cotação continua sendo calculada pela API somente depois de informar o período, a categoria e as opções.
+- A ação de reservar navega para `/locacoes?veiculoId=<id>`; o fluxo protegido conserva o destino através do login/cadastro, pré-seleciona o veículo e deixa o serviço de locação recalcular o total.
+- O CRUD `/veiculos` é uma área de frota ADMIN-only, sem botão de reserva nem exibição de `valorDiaria`; preços permanecem em `/precificacao` e as tarifas não são editadas no cadastro operacional.
+- A navegação prioriza Catálogo e Locações; administração segue Clientes, Frota, Precificação, Configurações e Usuários. Visitantes veem Catálogo, Entrar e Criar conta; USER vê Catálogo e Minhas locações.
+- A interface reaproveita a paleta e os componentes do dashboard existente, com hero ilustrativo, busca/filtro por categoria, cards adaptáveis a telas pequenas e regras em blocos legíveis. A foto não representa disponibilidade real; não se mostra tarifa fixa, porque a API só pode cotar após receber datas e opções.

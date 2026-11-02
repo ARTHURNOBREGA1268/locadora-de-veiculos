@@ -1,19 +1,28 @@
-import { useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router';
-import { useAuth } from '../context/AuthContext';
-import { registrar } from '../services/authService';
-import { mensagemDeErro } from '../services/api';
-import Alert from '../components/Alert';
+import { useState } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router";
+import { useAuth } from "../context/AuthContext";
+import { registrar } from "../services/authService";
+import { mensagemDeErro } from "../services/api";
+import Alert from "../components/Alert";
+
+function obterDestino(state) {
+  const origem = state?.from;
+  if (!origem || typeof origem.pathname !== "string" || !origem.pathname.startsWith("/") || origem.pathname.startsWith("//"))
+    return undefined;
+  return origem;
+}
 
 export default function Cadastro() {
   const { usuario, carregando } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [campos, setCampos] = useState({ nome: '', email: '', senha: '' });
+  const destino = obterDestino(location.state);
+  const [campos, setCampos] = useState({ nome: "", email: "", senha: "" });
   const [enviando, setEnviando] = useState(false);
   const [alerta, setAlerta] = useState(null);
 
   if (carregando) return null;
-  if (usuario) return <Navigate to="/locacoes" replace />;
+  if (usuario) return <Navigate to={destino ? `${destino.pathname}${destino.search || ""}` : "/locacoes"} replace />;
 
   function alterar(evento) {
     setCampos({ ...campos, [evento.target.name]: evento.target.value });
@@ -25,9 +34,14 @@ export default function Cadastro() {
     setAlerta(null);
     try {
       await registrar(campos);
-      navigate('/login', { state: { mensagem: 'Conta criada. Entre com seu e-mail e senha.' } });
+      navigate("/login", {
+        state: {
+          mensagem: "Conta criada. Entre com seu e-mail e senha.",
+          ...(destino ? { from: destino } : {}),
+        },
+      });
     } catch (erro) {
-      setAlerta({ tipo: 'erro', texto: mensagemDeErro(erro) });
+      setAlerta({ tipo: "erro", texto: mensagemDeErro(erro) });
       setEnviando(false);
     }
   }
@@ -51,10 +65,10 @@ export default function Cadastro() {
           <input name="senha" type="password" value={campos.senha} onChange={alterar} autoComplete="new-password" required minLength={6} />
         </label>
         <button type="submit" className="botao botao-principal" disabled={enviando}>
-          {enviando ? 'Criando conta...' : 'Criar conta'}
+          {enviando ? "Criando conta..." : "Criar conta"}
         </button>
         <p className="troca">
-          Já tem conta? <Link to="/login">Entrar</Link>
+          Já tem conta? <Link to="/login" state={location.state}>Entrar</Link>
         </p>
       </form>
     </div>

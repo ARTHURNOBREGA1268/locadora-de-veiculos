@@ -1375,3 +1375,565 @@ select {
 .locacao-cobranca-form .formulario { max-width: 460px; margin-top: 12px; }
 .locacao-switch { display: flex; grid-template-columns: auto 1fr; align-items: center; gap: 8px; margin-top: 8px; }
 .locacao-switch input[type="checkbox"] { width: auto; accent-color: var(--petroleo); }
+
+
+/* Catálogo público de veículos */
+.marca-link {
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.menu {
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.menu a {
+  white-space: nowrap;
+  font-size: 0.92rem;
+}
+
+.usuario-visitante {
+  white-space: nowrap;
+}
+
+.nav-entrar {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.nav-cadastrar {
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.usuario-carregando {
+  min-width: 120px;
+  min-height: 36px;
+}
+
+.catalogo-pagina {
+  display: grid;
+  gap: 34px;
+}
+
+.catalogo-hero {
+  min-height: 370px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  color: #fff;
+  background-color: #123d49;
+  background-image: linear-gradient(90deg, rgba(7, 38, 48, 0.98) 0%, rgba(7, 38, 48, 0.9) 40%, rgba(7, 38, 48, 0.22) 100%), url("/images/catalogo-hero.jpg");
+  background-size: cover;
+  background-position: center 54%;
+  box-shadow: 0 18px 42px rgba(10, 40, 49, 0.15);
+}
+
+.catalogo-hero-conteudo {
+  position: relative;
+  z-index: 1;
+  max-width: 670px;
+  padding: 48px;
+  display: grid;
+  gap: 16px;
+}
+
+.catalogo-etiqueta,
+.catalogo-overline {
+  color: #b5dce3;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.catalogo-hero h1 {
+  max-width: 600px;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  letter-spacing: -0.035em;
+}
+
+.catalogo-hero p {
+  max-width: 550px;
+  margin: 0;
+  color: #e0edf0;
+  font-size: 1.08rem;
+}
+
+.catalogo-hero-acoes {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+
+.catalogo-hero .botao-claro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: 700;
+  border-color: rgba(255, 255, 255, 0.6);
+  background: #fff;
+  color: #0a3643;
+}
+
+.catalogo-link-hero {
+  color: #fff;
+  font-weight: 600;
+  text-decoration-color: rgba(255, 255, 255, 0.6);
+  text-underline-offset: 4px;
+}
+
+.catalogo-hero-beneficios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.catalogo-hero-beneficios span {
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(7, 38, 48, 0.4);
+  color: #e5f2f4;
+  font-size: 0.82rem;
+}
+
+.catalogo-hero-foto {
+  position: absolute;
+  z-index: 1;
+  right: 24px;
+  bottom: 18px;
+  display: grid;
+  gap: 2px;
+  text-align: right;
+  color: #fff;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+
+.catalogo-hero-foto span {
+  font-family: var(--display);
+  font-weight: 700;
+}
+
+.catalogo-hero-foto small {
+  color: #eaf1f2;
+  font-size: 0.72rem;
+}
+
+.catalogo-secao {
+  display: grid;
+  gap: 18px;
+  scroll-margin-top: 24px;
+}
+
+.catalogo-secao-cabecalho {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.catalogo-secao-cabecalho > div {
+  display: grid;
+  gap: 6px;
+}
+
+.catalogo-overline {
+  color: var(--petroleo);
+}
+
+.catalogo-secao-cabecalho h2,
+.catalogo-regras-intro h2 {
+  font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.catalogo-contagem {
+  padding: 7px 12px;
+  border: 1px solid var(--linha);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--apoio);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.catalogo-filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(220px, 0.7fr);
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--linha);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.catalogo-filtros label {
+  color: var(--apoio);
+  font-size: 0.86rem;
+}
+
+.catalogo-filtros input,
+.catalogo-filtros select {
+  margin-top: 2px;
+}
+
+.catalogo-grade {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 18px;
+}
+
+.catalogo-card {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--linha);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(20, 35, 43, 0.05);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.catalogo-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 34px rgba(20, 35, 43, 0.11);
+}
+
+.catalogo-card-visual {
+  position: relative;
+  min-height: 172px;
+  overflow: hidden;
+  display: flex;
+  align-items: end;
+  padding: 16px;
+  color: #fff;
+  background: radial-gradient(circle at 78% 24%, rgba(75, 144, 153, 0.5), transparent 34%), linear-gradient(145deg, #173f4b, #0b2f3a);
+}
+
+.catalogo-card-visual::after {
+  content: "";
+  position: absolute;
+  right: -35px;
+  top: -64px;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 50%;
+  box-shadow: 0 0 0 22px rgba(255, 255, 255, 0.025), 0 0 0 48px rgba(255, 255, 255, 0.02);
+}
+
+.catalogo-disponivel,
+.catalogo-card-categoria,
+.catalogo-card-ano {
+  position: absolute;
+  z-index: 1;
+  top: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(8, 35, 43, 0.55);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+}
+
+.catalogo-disponivel {
+  left: 14px;
+}
+
+.catalogo-disponivel i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6cdda0;
+  box-shadow: 0 0 0 3px rgba(108, 221, 160, 0.16);
+}
+
+.catalogo-card-categoria {
+  right: 14px;
+}
+
+.catalogo-carro-silhueta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  color: #eaf4f5;
+  filter: drop-shadow(0 9px 6px rgba(0, 0, 0, 0.27));
+}
+
+.catalogo-carro-silhueta svg {
+  width: min(82%, 230px);
+  height: auto;
+}
+
+.catalogo-card-ano {
+  top: auto;
+  right: 14px;
+  bottom: 13px;
+  padding: 4px 9px;
+  color: #e2f1f3;
+}
+
+.catalogo-card-conteudo {
+  display: grid;
+  flex: 1;
+  gap: 16px;
+  padding: 18px;
+}
+
+.catalogo-card-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 12px;
+}
+
+.catalogo-card-titulo h3 {
+  font-size: 1.2rem;
+}
+
+.catalogo-card-titulo p {
+  margin: 4px 0 0;
+  color: var(--apoio);
+  font-size: 0.9rem;
+}
+
+.catalogo-cor {
+  max-width: 92px;
+  color: var(--apoio);
+  font-size: 0.78rem;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.catalogo-especificacoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.catalogo-especificacoes span {
+  padding: 5px 8px;
+  border: 1px solid #e1e7e9;
+  border-radius: 6px;
+  background: #f6f8f9;
+  color: #435860;
+  font-size: 0.8rem;
+}
+
+.catalogo-card-rodape {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid #e8edef;
+}
+
+.catalogo-card-rodape p {
+  margin: 0;
+  color: var(--apoio);
+  font-size: 0.82rem;
+}
+
+.catalogo-card-rodape .botao {
+  display: inline-flex;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.catalogo-vazio {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 36px 20px;
+  border: 1px dashed #b6c4c9;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+  color: var(--apoio);
+}
+
+.catalogo-vazio h3,
+.catalogo-vazio p {
+  margin: 0;
+}
+
+.catalogo-vazio h3 {
+  color: var(--tinta);
+}
+
+.catalogo-vazio-selo {
+  color: var(--petroleo);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.catalogo-regras-secao {
+  display: grid;
+  gap: 18px;
+  padding: clamp(20px, 4vw, 32px);
+  border: 1px solid var(--linha);
+  border-radius: 16px;
+  background: #fff;
+  scroll-margin-top: 24px;
+}
+
+.catalogo-regras-intro {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+}
+
+.catalogo-regras-intro p {
+  margin: 0;
+  color: var(--apoio);
+}
+
+.catalogo-regras-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.catalogo-regra {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 13px 14px;
+  border: 1px solid #e1e8eb;
+  border-radius: 10px;
+  background: #f7f9fa;
+}
+
+.catalogo-regra span {
+  color: var(--apoio);
+  font-size: 0.79rem;
+  font-weight: 600;
+}
+
+.catalogo-regra strong {
+  color: var(--tinta);
+  font-size: 0.94rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.catalogo-regras-detalhes {
+  border-top: 1px solid var(--linha);
+  padding-top: 16px;
+}
+
+.catalogo-regras-detalhes summary {
+  color: var(--petroleo);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.catalogo-regras-grade-secundaria {
+  margin-top: 14px;
+}
+
+.catalogo-regras-rodape {
+  margin: 0;
+  color: var(--apoio);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 850px) {
+  .topo-conteudo {
+    gap: 12px;
+  }
+
+  .menu {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+
+  .catalogo-regras-grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .topo-conteudo {
+    padding: 12px 16px;
+  }
+
+  .menu {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 2px 0 5px;
+    scrollbar-width: thin;
+  }
+
+  .menu a {
+    flex: 0 0 auto;
+  }
+
+  .usuario-visitante {
+    margin-left: auto;
+    gap: 5px;
+  }
+
+  .nav-entrar {
+    padding-inline: 6px;
+  }
+
+  .nav-cadastrar {
+    padding: 8px 10px;
+  }
+
+  .catalogo-hero {
+    min-height: 450px;
+    background-position: 62% center;
+  }
+
+  .catalogo-hero-conteudo {
+    padding: 28px 22px 88px;
+  }
+
+  .catalogo-hero h1 {
+    font-size: 2.25rem;
+  }
+
+  .catalogo-hero-foto {
+    right: 14px;
+    bottom: 12px;
+  }
+
+  .catalogo-filtros {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+
+  .catalogo-grade {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogo-regras-grade {
+    grid-template-columns: 1fr;
+  }
+}

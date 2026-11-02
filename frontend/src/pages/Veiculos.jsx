@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import * as veiculoService from "../services/veiculoService";
 import { mensagemDeErro } from "../services/api";
@@ -653,9 +652,8 @@ export default function Veiculos() {
           <p className="frota-eyebrow">GESTÃO DE ATIVOS</p>
           <h1>Frota de veículos</h1>
           <p className="apoio">
-            {admin
-              ? "Visão operacional e gestão completa da frota."
-              : "Consulte veículos e disponibilidade para locação."}
+            Cadastros, situação operacional e histórico da frota. As tarifas são
+            administradas separadamente na precificação.
           </p>
         </div>
         {admin && (
@@ -731,28 +729,6 @@ export default function Veiculos() {
               </div>
               <div className="frota-placa-row">
                 <span>{v.cor || "Cor não informada"}</span>
-              </div>
-              <div className="frota-card-bottom">
-                <div className="frota-preco">
-                  {v.valorDiaria > 0 ? (
-                    <>
-                      <strong>{formatarMoeda(v.valorDiaria)}</strong>
-                      <small>/ dia</small>
-                    </>
-                  ) : (
-                    <span className="frota-pendente">
-                      Precificação pendente
-                    </span>
-                  )}
-                </div>
-                {v.status === "disponivel" && v.valorDiaria > 0 && (
-                  <Link
-                    className="botao botao-principal"
-                    to={`/locacoes?veiculoId=${v.id}`}
-                  >
-                    Alugar
-                  </Link>
-                )}
               </div>
               {admin && (
                 <div className="frota-acoes">

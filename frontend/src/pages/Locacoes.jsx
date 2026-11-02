@@ -38,14 +38,16 @@ export default function Locacoes() {
   const carregar = useCallback(async () => {
     try {
       const [veiculos, reservas] = await Promise.all([veiculoService.listar(), locacaoService.listar()]);
-      setDisponiveis(veiculos.filter(item => !['inativo', 'manutencao'].includes(item.status)));
+      setDisponiveis(admin
+        ? veiculos.filter(item => !['inativo', 'manutencao'].includes(item.status))
+        : veiculos.filter(item => item.status === 'disponivel'));
       setLocacoes(reservas);
     } catch (erro) {
       setAlerta({ tipo: 'erro', texto: mensagemDeErro(erro) });
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [admin]);
 
   useEffect(() => { carregar(); }, [carregar]);
   useEffect(() => {

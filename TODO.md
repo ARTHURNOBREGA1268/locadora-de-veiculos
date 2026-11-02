@@ -77,3 +77,11 @@
 ## Pendências já identificadas da precificação
 - [x] Cobrança operacional de km excedente, atraso e combustível calculada após registrar a vistoria de devolução, quando a configuração e dados de operação permitem.
 - [x] Ao registrar multa de um veículo, localizar a locação que cobre a data da infração usando retirada/devolução reais quando disponíveis e o intervalo previsto como fallback. Permitir seleção ADMIN explícita quando houver ambiguidade, rejeitar vínculo a outro veículo ou a uma data fora do período e, havendo vínculo, criar uma única cobrança `multa_transito` do valor da infração mais a taxa administrativa configurada, além de saldo pendente. Preservar o vínculo multa↔cobrança; multas vinculadas após a finalização atualizam o valor final sem reescrever o snapshot original.
+
+
+## Catálogo público e navegação — implementado
+- [x] Disponibilizar `/catalogo` para visitante e usuário: listar somente veículos com status disponível usando DTO seguro, informar que disponibilidade final é validada para o período e oferecer busca/filtro por dados públicos do veículo.
+- [x] Exibir regras comerciais atuais da locação por endpoint público somente de leitura e dados explicitamente permitidos; nunca retornar custo, modelo de contrato ou configuração administrativa não destinada ao cliente.
+- [x] Cada veículo disponível oferece ação para iniciar reserva com o ID pré-selecionado; visitantes passam por login/cadastro e retornam ao veículo escolhido, e a cotação autoritativa ocorre ao informar datas no formulário existente.
+- [x] Remover diária/preço e ação de alugar do CRUD de veículos; manter preço e regras tarifárias na administração de precificação e restringir o CRUD da frota a ADMIN.
+- [x] Ordenar o cabeçalho por jornada: Catálogo, Locações/Minhas locações e, para ADMIN, Clientes, Frota, Precificação, Configurações e Usuários; visitantes recebem Entrar e Criar conta.
