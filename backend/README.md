@@ -57,7 +57,7 @@ As datas de locação devem ser enviadas como ISO 8601 com fuso horário explíc
 6. `npx prisma migrate deploy` (aplica as migrations versionadas em `prisma/migrations`, incluindo os campos `ativo` e `tokenVersion`)
 
 Em alterações locais do schema, use `npx prisma migrate dev --name nome_da_migration`; regenere o client com `npx prisma generate` (com `DATABASE_URL` configurada). Em CI/produção aplique migrations com `npx prisma migrate deploy`.
-7. `npm run seed` (cria o usuário de exemplo e 4 veículos)
+7. `npm run seed` (cria dados fictícios demonstrativos para contas/clientes, categorias, filiais, opcionais, frota, regras, tarifas, adicionais, proteções e histórico operacional)
 8. `npm run dev` (a API sobe em `http://127.0.0.1:3333` por padrão)
 
 A migration `20261101180000_add_usuario_papel` adiciona a coluna `Usuario.papel` com default `USER`; as contas existentes recebem `USER` sem alteração dos demais dados. O cadastro público sempre cria uma conta USER. Para preparar uma conta ADMIN, cadastre uma conta separada com senha forte e promova-a localmente, substituindo o e-mail pelo da conta criada:
@@ -66,7 +66,7 @@ A migration `20261101180000_add_usuario_papel` adiciona a coluna `Usuario.papel`
 npm run admin:promote -- admin@exemplo.com
 ```
 
-O comando requer acesso ao `DATABASE_URL` do ambiente e a confirmação digitada `PROMOVER`; ele não cria contas nem expõe endpoint HTTP de promoção. Não promova a conta demo `demo@locadora.com` sem antes substituir a senha padrão `123456` por uma senha forte e única.
+O comando requer acesso ao `DATABASE_URL` do ambiente e a confirmação digitada `PROMOVER`; ele não cria contas nem expõe endpoint HTTP de promoção. O seed contém somente dados fictícios, recusa execução quando `NODE_ENV=production`, usa upserts sem atualizar contas/cadastros existentes e não apaga registros. As senhas padrão de demonstração são apenas para banco local vazio; troque-as antes de qualquer uso fora de demonstração.
 
 ### Frontend
 1. A partir da raiz do repositório consolidado, entrar na pasta do frontend: `cd frontend`
@@ -75,8 +75,9 @@ O comando requer acesso ao `DATABASE_URL` do ambiente e a confirmação digitada
 4. `npm run dev` e acessar `http://localhost:5173`
 
 ## Dados de exemplo
-Usuário: `demo@locadora.com` / senha `123456`
-Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Corolla.
+Em um banco local vazio, são criadas as contas `demo@locadora.com` (USER, senha `123456`) e `dedevelfullstack.arthur@gmail.com` (ADMIN, senha `Admin@Locadora123`), além de oito veículos fictícios, clientes, filiais, categorias, opcionais, configurações de locação e precificação, regras, tarifas, adicionais, proteções, cupom, fidelidade, locação histórica, pagamento DEMO, vistoria, manutenção, avaria e multa.
+
+Se uma conta já existir, o seed não muda senha nem papel — em especial, não promove automaticamente um USER a ADMIN. As variáveis `SEED_DEMO_EMAIL`, `SEED_DEMO_PASSWORD`, `SEED_ADMIN_EMAIL` e `SEED_ADMIN_PASSWORD` permitem ajustar os dados de demonstração. Os registros e eventos de pagamento criados pelo seed são fictícios e não representam transações reais.
 
 ## Rotas
 | Método | Rota | Auth | Descrição |
