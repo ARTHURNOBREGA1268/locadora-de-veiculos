@@ -102,4 +102,4 @@
 - [x] Converter erros de serialização/conflito Prisma `P2034` em HTTP 409; `GET /veiculos?disponivel=true|false` funciona para USER somente dentro da lista pública e sem revelar veículos em manutenção/inativos.
 - [x] Remover os componentes legados `VeiculoForm.jsx` e `VeiculoList.jsx` sem importadores; remover os comentários manuais apontados em cálculo, seed, teste de integração, CSS e migrations.
 - [x] Manter o teste MySQL real opt-in localmente e adicionar duas reservas concorrentes ao fluxo executado pelo job CI MySQL 8, verificando um sucesso e um conflito 409.
-- [x] Confirmar que o `git clone` do README corresponde ao proprietário atual `projeto-dev-web-com-framework/locadora-de-veiculos`; só alterar a URL após uma transferência efetiva do repositório.
+- [x] Após transferir o repositório para `ARTHURNOBREGA1268/locadora-de-veiculos`, atualizar o `git clone` do README para a URL do proprietário atual.

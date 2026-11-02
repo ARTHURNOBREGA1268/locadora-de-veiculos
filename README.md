@@ -40,7 +40,7 @@ As tarifas são administradas separadamente em **Precificação**, por categoria
 ## Obter o projeto
 
 ```bash
-git clone https://github.com/projeto-dev-web-com-framework/locadora-de-veiculos.git
+git clone https://github.com/ARTHURNOBREGA1268/locadora-de-veiculos.git
 cd locadora-de-veiculos
 ```
 
