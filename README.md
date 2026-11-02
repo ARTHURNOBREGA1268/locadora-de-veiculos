@@ -9,6 +9,12 @@ backend/   API REST, autenticação JWT, regras de negócio, Prisma e migrations
 frontend/  Interface React/Vite e integração HTTP com a API
 ```
 
+## Diagrama ER
+
+O diagrama A4 apresenta um recorte operacional das principais entidades e relações do sistema. [Abrir ou baixar o PDF](modelo_er_locacao_A4.pdf).
+
+![Prévia do diagrama ER operacional](docs/modelo_er_locacao_A4.png)
+
 ## Fronteira de acesso
 
 O navegador acessa o frontend e chama a API pela mesma origem usando `/api`. No desenvolvimento, o servidor Vite encaminha esse caminho ao backend local. No exemplo de produção em `deploy/nginx.conf`, o Nginx serve os arquivos públicos do frontend e encaminha `/api/*` ao backend em `127.0.0.1:3333`; não exponha as portas `3333` da API ou `3306` do MySQL. A implantação é um exemplo para host único e precisa ser adaptada ao provedor escolhido.
