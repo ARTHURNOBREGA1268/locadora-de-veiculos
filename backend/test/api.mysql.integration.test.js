@@ -383,8 +383,13 @@ test(
       filialId: filial.id,
       proximaRevisaoKm: 60000,
       proximaRevisaoData: "2027-05-15",
-      valorDiaria: 120.55,
     };
+    const tentativaTarifaNoVeiculo = await requisitar("/veiculos", {
+      metodo: "POST",
+      token: token1,
+      corpo: { ...dadosVeiculo, valorDiaria: 120.55 },
+    });
+    assert.equal(tentativaTarifaNoVeiculo.status, 400);
     const cadastroVeiculo = await requisitar("/veiculos", {
       metodo: "POST",
       token: token1,
@@ -396,6 +401,7 @@ test(
     assert.equal(cadastroVeiculo.dados.chassi, chassi);
     assert.equal(cadastroVeiculo.dados.opcionais[0].opcional.id, opcional.id);
     assert.equal(cadastroVeiculo.dados.status, "disponivel");
+    assert.equal(Object.hasOwn(cadastroVeiculo.dados, "valorDiaria"), false);
 
     const listaVeiculos = await requisitar("/veiculos", { token: token1 });
     const veiculoPublico = listaVeiculos.dados.find(
@@ -409,6 +415,7 @@ test(
       "valorCompra",
       "valorFipe",
       "apoliceNumero",
+      "valorDiaria",
     ]) {
       assert.equal(
         Object.hasOwn(veiculoPublico, campo),
@@ -423,6 +430,12 @@ test(
     );
     assert.equal(detalheVeiculo.status, 200);
     assert.equal(Number(detalheVeiculo.dados.valorCompra), 150000);
+    assert.equal(Object.hasOwn(detalheVeiculo.dados, "valorDiaria"), false);
+    const alteracaoTarifaNoVeiculo = await requisitar(
+      `/veiculos/${cadastroVeiculo.dados.id}`,
+      { metodo: "PATCH", token: token1, corpo: { valorDiaria: 120 } },
+    );
+    assert.equal(alteracaoTarifaNoVeiculo.status, 400);
     const edicaoVeiculo = await requisitar(
       `/veiculos/${cadastroVeiculo.dados.id}`,
       {

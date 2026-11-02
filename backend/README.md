@@ -9,8 +9,8 @@ Uma locadora cadastra veículos, controla a disponibilidade e registra as locaç
 - Cadastro e login de usuários, com senha em hash (bcrypt) e autenticação por JWT
 - Papéis USER e ADMIN; usuários públicos são sempre USER
 - Gestão administrativa de usuários (listar, criar, editar, atribuir USER/ADMIN e ativar/inativar), além do cadastro de veículos restritos a ADMIN
-- Catálogo administrativo de veículos: cadastro/edição de identificação, características, situação operacional, dados financeiros/documentais, categoria, filial e opcionais
-- Listagem pública com campos seguros e filtros por status; detalhe completo e histórico somente para ADMIN
+- Gestão administrativa da frota: cadastro/edição de identificação, características, situação operacional, dados financeiros/documentais, categoria, filial e opcionais; a tarifa não faz parte do CRUD de veículos
+- Catálogo público com veículos disponíveis, busca e regras comerciais curadas; dados de placa, documentação, custos e tarifa legada não são expostos
 - Histórico administrativo por veículo: manutenções, sinistros/avarias, multas e vistorias; vínculos de locação são validados
 - Precificação API-first: custos operacionais, ocupação, margem, tarifas por categoria/vigência, regras dinâmicas, adicionais, proteções, cupons, fidelidade, impostos e taxas
 - Cotação discriminada no backend e congelamento do preço no mesmo commit transacional da reserva; futuras alterações de preço não mudam o histórico
@@ -84,6 +84,8 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | POST | /auth/register | não | Cadastra usuário |
 | POST | /auth/login | não | Retorna o JWT |
 | GET | /auth/me | sim | Dados do usuário autenticado |
+| GET | /catalogo/veiculos | não | Lista veículos disponíveis com DTO comercial seguro |
+| GET | /catalogo/regras | não | Consulta regras divulgáveis de locação; exclui contrato e configuração interna |
 | GET | /usuarios | sim, ADMIN | Lista usuários ativos e inativos sem senhaHash |
 | POST | /usuarios | sim, ADMIN | Cadastra usuário (nome, email, senha; papel USER/ADMIN opcional) |
 | PATCH | /usuarios/:id | sim, ADMIN | Edita nome/e-mail, redefine senha, troca papel ou ativa/inativa usuário |
@@ -92,7 +94,7 @@ Veículos do seed: Fiat Mobi, Chevrolet Onix, Volkswagen T-Cross e Toyota Coroll
 | GET | /veiculos | sim | Lista veículos |
 | GET | /veiculos?disponivel=true | sim | Lista só os disponíveis |
 | GET | /veiculos/:id | sim, ADMIN | Consulta cadastro completo do veículo |
-| PATCH | /veiculos/:id | sim, ADMIN | Edita o cadastro sem alterar a tarifa diária |
+| PATCH | /veiculos/:id | sim, ADMIN | Edita dados cadastrais/operacionais; `valorDiaria` não é aceito |
 | GET | /veiculos/:id/historico | sim, ADMIN | Lista manutenções, sinistros, multas e vistorias |
 | POST | /veiculos/:id/manutencoes | sim, ADMIN | Registra manutenção |
 | POST | /veiculos/:id/sinistros | sim, ADMIN | Registra sinistro/avaria |

@@ -274,6 +274,81 @@ async function obter() {
     catalogos: { filiais, categorias },
   };
 }
+function serializarHoraPublica(valor, fallback) {
+  if (valor instanceof Date && Number.isFinite(valor.getTime()))
+    return valor.toISOString().slice(11, 16);
+  const correspondencia = String(valor ?? fallback).match(/\d{2}:\d{2}/);
+  return correspondencia ? correspondencia[0] : String(fallback).slice(0, 5);
+}
+async function obterRegrasPublicas() {
+  const campos = [
+    "periodoMinimoDiarias",
+    "periodoMaximoDiarias",
+    "horarioRetiradaPadrao",
+    "horarioDevolucaoPadrao",
+    "toleranciaAtrasoMinutos",
+    "antecedenciaMinimaHoras",
+    "antecedenciaMaximaDias",
+    "cancelamentoPrazoHoras",
+    "cancelamentoMultaPercentual",
+    "idadeMinima",
+    "tempoMinimoCnhMeses",
+    "documentosExigidos",
+    "exigeCartaoCredito",
+    "permiteMotoristaAdicional",
+    "maxMotoristasAdicionais",
+    "kmLivre",
+    "kmFranquiaDiaria",
+    "politicaCombustivel",
+    "permiteDevolucaoOutraFilial",
+    "permiteEntregaDomicilio",
+    "permiteRetiradaAeroporto",
+    "raioEntregaKm",
+    "protecaoBasicaInclusa",
+    "exigeVistoriaSaida",
+    "exigeVistoriaEntrada",
+  ];
+  const registro = await prisma.configuracaoLocacao.findUnique({
+    where: { id: 1 },
+    select: Object.fromEntries(campos.map((campo) => [campo, true])),
+  });
+  const c = { ...defaults, ...(registro || {}) };
+  return {
+    periodoMinimoDiarias: Number(c.periodoMinimoDiarias),
+    periodoMaximoDiarias: Number(c.periodoMaximoDiarias),
+    horarioRetiradaPadrao: serializarHoraPublica(
+      c.horarioRetiradaPadrao,
+      defaults.horarioRetiradaPadrao,
+    ),
+    horarioDevolucaoPadrao: serializarHoraPublica(
+      c.horarioDevolucaoPadrao,
+      defaults.horarioDevolucaoPadrao,
+    ),
+    toleranciaAtrasoMinutos: Number(c.toleranciaAtrasoMinutos),
+    antecedenciaMinimaHoras: Number(c.antecedenciaMinimaHoras),
+    antecedenciaMaximaDias: Number(c.antecedenciaMaximaDias),
+    cancelamentoPrazoHoras: Number(c.cancelamentoPrazoHoras),
+    cancelamentoMultaPercentual: Number(c.cancelamentoMultaPercentual),
+    idadeMinima: Number(c.idadeMinima),
+    tempoMinimoCnhMeses: Number(c.tempoMinimoCnhMeses),
+    documentosExigidos: Array.isArray(c.documentosExigidos)
+      ? c.documentosExigidos
+      : [],
+    exigeCartaoCredito: Boolean(c.exigeCartaoCredito),
+    permiteMotoristaAdicional: Boolean(c.permiteMotoristaAdicional),
+    maxMotoristasAdicionais: Number(c.maxMotoristasAdicionais),
+    kmLivre: Boolean(c.kmLivre),
+    kmFranquiaDiaria: c.kmFranquiaDiaria,
+    politicaCombustivel: c.politicaCombustivel,
+    permiteDevolucaoOutraFilial: Boolean(c.permiteDevolucaoOutraFilial),
+    permiteEntregaDomicilio: Boolean(c.permiteEntregaDomicilio),
+    permiteRetiradaAeroporto: Boolean(c.permiteRetiradaAeroporto),
+    raioEntregaKm: c.raioEntregaKm,
+    protecaoBasicaInclusa: Boolean(c.protecaoBasicaInclusa),
+    exigeVistoriaSaida: Boolean(c.exigeVistoriaSaida),
+    exigeVistoriaEntrada: Boolean(c.exigeVistoriaEntrada),
+  };
+}
 async function atualizar(b) {
   const d = valida(b);
   return prisma
@@ -422,4 +497,4 @@ async function atualizar(b) {
     })
     .then(() => obter());
 }
-module.exports = { obter, atualizar, valida, defaults };
+module.exports = { obter, obterRegrasPublicas, atualizar, valida, defaults };

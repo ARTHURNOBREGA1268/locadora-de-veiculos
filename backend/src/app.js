@@ -9,6 +9,7 @@ const usuarioRoutes = require('./routes/usuario.routes');
 const clienteRoutes = require('./routes/cliente.routes');
 const configuracaoRoutes = require('./routes/configuracao.routes');
 const precificacaoRoutes = require('./routes/precificacao.routes');
+const catalogoRoutes = require('./routes/catalogo.routes');
 const { naoEncontrado, tratarErros } = require('./middlewares/error.middleware');
 const app = express();
 const origensPermitidas = (process.env.CORS_ORIGIN || 'http://localhost:5173')
@@ -27,6 +28,7 @@ app.use(cors({
 app.use(express.json());
 
 app.use('/auth', authRoutes);
+app.use('/catalogo', catalogoRoutes);
 app.use('/veiculos', veiculoRoutes);
 app.use('/locacoes', locacaoRoutes);
 app.use('/usuarios', usuarioRoutes);

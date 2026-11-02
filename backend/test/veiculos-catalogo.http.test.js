@@ -77,8 +77,8 @@ test("DTO público de veículo não expõe identificação sigilosa, documentaç
 
   assert.equal(resultado.id, 5);
   assert.equal(resultado.status, "disponivel");
-  assert.equal(resultado.valorDiaria, "200.00");
   for (const campo of [
+    "valorDiaria",
     "renavam",
     "chassi",
     "dataCompra",
@@ -115,7 +115,10 @@ test("validação do veículo rejeita placa, RENAVAM, chassi, ano e enum inváli
     [{ ...base, anoFabricacao: 1800 }, /anoFabricacao inválido/],
     [{ ...base, numPortas: 9 }, /numPortas inválido/],
     [{ ...base, valorCompra: 10000000000 }, /valorCompra inválido/],
-    [{ ...base, valorDiaria: 100000000 }, /valorDiaria inválido/],
+    [
+      { ...base, valorDiaria: 100 },
+      /valorDiaria é gerido exclusivamente pela precificação/,
+    ],
     [{ ...base, apoliceFranquia: 100000000 }, /apoliceFranquia inválido/],
     [
       { ...base, anoFabricacao: 2025, anoModelo: 2024 },

@@ -31,7 +31,6 @@ const PUBLIC_FIELDS = [
   "opcionais",
   "status",
   "filial",
-  "valorDiaria",
 ];
 const WRITABLE = new Set([
   "placa",
@@ -68,7 +67,6 @@ const WRITABLE = new Set([
   "filialId",
   "proximaRevisaoKm",
   "proximaRevisaoData",
-  "valorDiaria",
   "disponivel",
   "renavam",
   "chassi",
@@ -148,6 +146,11 @@ function publicDto(vehicle) {
       out[key] = vehicle[key];
   return out;
 }
+function semTarifaLegada(vehicle) {
+  if (!vehicle) return vehicle;
+  const { valorDiaria, ...dados } = vehicle;
+  return dados;
+}
 function onlyKnown(body, allowed) {
   const unknown = Object.keys(body).filter((key) => !allowed.has(key));
   if (unknown.length) fail(`Campos não permitidos: ${unknown.join(", ")}`);
@@ -155,11 +158,11 @@ function onlyKnown(body, allowed) {
 async function cleanVehicle(body, editing) {
   if (!body || typeof body !== "object" || Array.isArray(body))
     fail("Corpo inválido");
+  if (Object.hasOwn(body, "valorDiaria"))
+    fail("valorDiaria é gerido exclusivamente pela precificação");
   onlyKnown(body, WRITABLE);
   const data = { ...body };
   delete data.disponivel;
-  if (editing && Object.hasOwn(body, "valorDiaria"))
-    fail("valorDiaria não pode ser editado por PATCH");
   if (data.placa !== undefined) {
     data.placa = String(data.placa).trim().toUpperCase();
     if (!/^[A-Z0-9-]{5,8}$/.test(data.placa)) fail("placa inválida");
@@ -236,7 +239,7 @@ async function cleanVehicle(body, editing) {
   for (const key of ["valorCompra", "valorFipe", "valorRevendaEstimado"])
     if (data[key] !== undefined)
       data[key] = parseNumber(data[key], key, { max: 9999999999.99 });
-  for (const key of ["apoliceFranquia", "valorDiaria"])
+  for (const key of ["apoliceFranquia"])
     if (data[key] !== undefined)
       data[key] = parseNumber(data[key], key, { max: 99999999.99 });
   for (const key of [
@@ -268,12 +271,7 @@ async function cleanVehicle(body, editing) {
       data.anoFabricacao = data.anoModelo;
     if (data.anoModelo === undefined && data.anoFabricacao !== undefined)
       data.anoModelo = data.anoFabricacao;
-    data.valorDiaria = body.valorDiaria === undefined ? 0 : data.valorDiaria;
-    data.status =
-      data.status ||
-      (body.valorDiaria !== undefined && data.valorDiaria > 0
-        ? "disponivel"
-        : "inativo");
+    data.status = data.status || "inativo";
     for (const key of ["categoriaId", "filialId"])
       if (data[key] !== undefined) data[key] = validId(data[key], key);
     if (!data.categoriaId)
@@ -304,20 +302,21 @@ const vehicleInclude = {
   filial: true,
 };
 async function cadastrar(body) {
-  return prisma.veiculo.create({
+  const veiculo = await prisma.veiculo.create({
     data: await cleanVehicle(body, false),
     include: vehicleInclude,
   });
+  return semTarifaLegada(veiculo);
 }
 async function editar(id, body) {
   const veiculoId = validId(id);
   const data = await cleanVehicle(body, true);
   if (data.status === "disponivel") {
-    const veiculo = await prisma.veiculo.findUnique({
+    const existente = await prisma.veiculo.findUnique({
       where: { id: veiculoId },
       select: { id: true },
     });
-    if (!veiculo) throw new AppError("Veículo não encontrado", 404);
+    if (!existente) throw new AppError("Veículo não encontrado", 404);
     const locacaoAtiva = await prisma.locacao.findFirst({
       where: {
         veiculoId,
@@ -332,7 +331,7 @@ async function editar(id, body) {
       );
     const opcionais = data.opcionais;
     delete data.opcionais;
-    return prisma.$transaction(async (tx) => {
+    const veiculo = await prisma.$transaction(async (tx) => {
       const atualizacao = await tx.veiculo.updateMany({
         where: {
           id: veiculoId,
@@ -355,12 +354,14 @@ async function editar(id, body) {
         include: vehicleInclude,
       });
     });
+    return semTarifaLegada(veiculo);
   }
-  return prisma.veiculo.update({
+  const veiculo = await prisma.veiculo.update({
     where: { id: veiculoId },
     data,
     include: vehicleInclude,
   });
+  return semTarifaLegada(veiculo);
 }
 async function listar({ disponivel, status, userRole }) {
   const where = {};
@@ -383,6 +384,27 @@ async function listar({ disponivel, status, userRole }) {
     })
   ).map(publicDto);
 }
+async function listarCatalogo() {
+  return prisma.veiculo.findMany({
+    where: { status: "disponivel" },
+    select: {
+      id: true,
+      marca: true,
+      modelo: true,
+      versao: true,
+      anoFabricacao: true,
+      anoModelo: true,
+      cor: true,
+      cambio: true,
+      combustivel: true,
+      numPortas: true,
+      numPassageiros: true,
+      capacidadePortaMalas: true,
+      categoria: { select: { id: true, nome: true } },
+    },
+    orderBy: [{ marca: "asc" }, { modelo: "asc" }],
+  });
+}
 async function metadados() {
   const [categorias, filiais, opcionais] = await Promise.all([
     prisma.categoriaVeiculo.findMany({ orderBy: { nome: "asc" } }),
@@ -397,7 +419,7 @@ async function detalhe(id) {
     include: vehicleInclude,
   });
   if (!v) throw new AppError("Veículo não encontrado", 404);
-  return v;
+  return semTarifaLegada(v);
 }
 async function historico(id) {
   const v = await detalhe(id);
@@ -611,6 +633,7 @@ module.exports = {
   cadastrar,
   editar,
   listar,
+  listarCatalogo,
   metadados,
   detalhe,
   historico,
