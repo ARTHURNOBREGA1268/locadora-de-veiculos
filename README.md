@@ -21,11 +21,13 @@ O workflow em `.github/workflows/ci.yml` roda em pull requests e pushes para `ma
 
 Administradores podem listar, cadastrar e editar contas pela tela **Usuários**, alternar o perfil único `USER`/`ADMIN` e ativar ou inativar contas. A inativação preserva o histórico e bloqueia o acesso; redefinir a senha ou inativar revoga os tokens de sessão anteriores. O cadastro público continua criando somente `USER`.
 
-Administradores também gerenciam o cadastro completo da frota (identificação, características, dados financeiros e documentação, status operacional, filial, categoria e opcionais), editam veículos e registram manutenções, sinistros/avarias, multas e vistorias. Detalhes financeiros e documentais são restritos a ADMIN; a lista comum retorna apenas campos de catálogo. A diária não é editada no formulário do veículo e a precificação completa será implementada em etapa própria; veículos sem diária não podem ser alugados.
+Administradores também gerenciam o cadastro completo da frota (identificação, características, dados financeiros e documentação, status operacional, filial, categoria e opcionais), editam veículos e registram manutenções, sinistros/avarias, multas e vistorias. Detalhes financeiros e documentais são restritos a ADMIN; a lista comum retorna apenas campos de catálogo.
+As tarifas são administradas separadamente em **Precificação**, por categoria e vigência; o cadastro do veículo não define uma diária. A API calcula a cotação para o período solicitado, aplica as regras configuradas e congela os valores na confirmação da locação.
 
 ## Requisitos
 
 - Node.js 20 ou superior e npm
+- Git
 - MySQL
 - Uma instância de MySQL acessível pelo backend
 
@@ -79,7 +81,8 @@ Consulte também `backend/README.md`, `frontend/README.md` e `deploy/README.md` 
 
 ## Integrantes
 
-- A preencher com os nomes completos antes da entrega.
+- Arthur Nobreba Montengro — Backend
+- Hgor Gabriel Alves Montenegro — Frontend
 
 ## Situação da consolidação
 
