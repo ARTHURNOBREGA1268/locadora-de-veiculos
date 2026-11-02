@@ -83,7 +83,3 @@ Consulte também `backend/README.md`, `frontend/README.md` e `deploy/README.md` 
 
 - Arthur Nobreba Montengro — Backend
 - Hgor Gabriel Alves Montenegro — Frontend
-
-## Situação da consolidação
-
-Este repositório reúne os códigos de backend e frontend para facilitar a entrega em um único local. Os repositórios-fonte `backend` e `frontend` foram mantidos separados e não são removidos por esta consolidação.
