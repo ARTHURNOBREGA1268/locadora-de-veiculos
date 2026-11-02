@@ -56,7 +56,7 @@
 ### Pagamento, caução e cancelamento
 - [x] `caucao_valor DECIMAL(10,2)` somente leitura e `caucao_status ENUM(pendente, retida, liberada, utilizada)` apresentado como badge. Sem gateway, nenhuma captura ou liquidação é simulada.
 - [x] `forma_pagamento ENUM(credito, debito, pix, boleto, dinheiro, faturado)` em select; `parcelas TINYINT` em input, validado pela configuração.
-- [x] `locacao_pagamentos(id, locacao_id FK, tipo ENUM(reserva, caucao, saldo, estorno), valor DECIMAL(10,2), status ENUM(pendente, pago, falhou, estornado), gateway_id VARCHAR(80) NULL, pago_em DATETIME NULL)` em tabela somente leitura. Sem gateway existente, não simular pagamentos/capturas; registros começam pendentes.
+- [x] `locacao_pagamentos(id, locacao_id FK, tipo ENUM(reserva, caucao, saldo, estorno), valor DECIMAL(10,2), status ENUM(pendente, pago, falhou, estornado), gateway_id VARCHAR(80) NULL, pago_em DATETIME NULL)` em tabela somente leitura. Eventos reais permanecem pendentes sem gateway; somente registros fictícios identificados como `DEMO-SEED` apresentam estados pagos/estornados para demonstração, sem representar liquidação real.
 - [x] `cancelada_em DATETIME NULL` e `motivo_cancelamento VARCHAR(255) NULL` somente leitura/textarea no cancelamento; `multa_cancelamento DECIMAL(10,2) NULL` calculada e persistida no servidor. O serviço HTTP envia o motivo à API.
 
 ### Vistorias, contrato e histórico
@@ -85,3 +85,13 @@
 - [x] Cada veículo disponível oferece ação para iniciar reserva com o ID pré-selecionado; visitantes passam por login/cadastro e retornam ao veículo escolhido, e a cotação autoritativa ocorre ao informar datas no formulário existente.
 - [x] Remover diária/preço e ação de alugar do CRUD de veículos; manter preço e regras tarifárias na administração de precificação e restringir o CRUD da frota a ADMIN.
 - [x] Ordenar o cabeçalho por jornada: Catálogo, Locações/Minhas locações e, para ADMIN, Clientes, Frota, Precificação, Configurações e Usuários; visitantes recebem Entrar e Criar conta.
+
+
+## Consistência visual, responsividade e login — implementado
+- [x] Padronizar a altura, tipografia, espaçamento, borda e foco dos campos de entrada de todas as páginas; manter exceções proporcionais para checkbox, radio, range, arquivo e textarea. Centralizar o conteúdo de cada rota em uma largura fluida de 90% do espaço disponível.
+- [x] Tornar todas as páginas adaptáveis a telas largas, notebooks, tablets e celulares: menus, grades de campos/cartões, filtros, botões, tabelas e modais devem refluír ou rolar em uma área própria sem cortar conteúdo nem causar overflow da página.
+- [x] Profissionalizar a tela de login mantendo o fluxo seguro de retorno à reserva: composição e hierarquia de marca, formulário e mensagens consistentes com o restante da aplicação, experiência mobile, labels/acessibilidade e controle de visibilidade da senha.
+
+## Dados de demonstração abrangentes e seguros — implementado
+- [x] Completar o seed para apresentar dados coerentes nos módulos implementados, incluindo usuários/clientes, categorias/filiais/opcionais/veículos, configurações gerais, custos/tarifas/regras/adicionais/proteções/cupons/fidelidade, locações e seus históricos operacionais/financeiros relacionados, nos limites do schema existente.
+- [x] Dados seed são fictícios e repetíveis: usar chaves estáveis/upserts sem sobrescrever cadastros/configurações reais, nunca apagar fisicamente dados e impedir a execução de dados demonstrativos em produção por padrão; proteger colisões com os identificadores reservados DEMO e documentar credenciais locais sem gravar segredos do ambiente.
